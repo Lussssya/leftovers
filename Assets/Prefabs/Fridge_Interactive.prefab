@@ -162,6 +162,8 @@ GameObject:
   - component: {fileID: 7241520988606247391}
   - component: {fileID: 1862923878135733563}
   - component: {fileID: 277915806128039065}
+  - component: {fileID: 2043392671858906748}
+  - component: {fileID: 9049426217677599633}
   m_Layer: 0
   m_Name: LowerDoor
   m_TagString: Untagged
@@ -261,6 +263,8 @@ MonoBehaviour:
   gentleCloseNoise: 1.2
   slamNoise: 24
   slamVolume: 1
+  closingVolume: 1
+  collision: {fileID: 9049426217677599633}
   slamPuff: {fileID: 2472683110961284535}
   oneShotSource: {fileID: 2387006200757296948}
   movementSource: {fileID: 8253570683305572403}
@@ -304,7 +308,7 @@ Rigidbody:
   m_IsKinematic: 1
   m_Interpolate: 0
   m_Constraints: 0
-  m_CollisionDetection: 0
+  m_CollisionDetection: 3
 --- !u!64 &277915806128039065
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -322,11 +326,48 @@ MeshCollider:
   m_LayerOverridePriority: 0
   m_IsTrigger: 0
   m_ProvidesContacts: 0
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 5
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 9075288718550062223, guid: f3227046e6624947b7c68fe0c06f22dd, type: 3}
+--- !u!65 &2043392671858906748
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 214892111486359563}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1.1191208, y: 1.2303313, z: 0.3582984}
+  m_Center: {x: 0.56256044, y: -0.62811846, z: 0.18214911}
+--- !u!114 &9049426217677599633
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 214892111486359563}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15f31334ca71d074ca50dac22ecca915, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  door: {fileID: 7241520988606247391}
+  applianceRoot: {fileID: 9189855357096660452}
+  parts:
+  - {fileID: 2043392671858906748}
 --- !u!1 &2339612987203841746
 GameObject:
   m_ObjectHideFlags: 0
@@ -5812,6 +5853,8 @@ GameObject:
   - component: {fileID: 1129538059320178477}
   - component: {fileID: 9180141854505251438}
   - component: {fileID: 4132060650410276381}
+  - component: {fileID: 3885108979987932287}
+  - component: {fileID: 3760015186354579404}
   m_Layer: 0
   m_Name: UpperDoor
   m_TagString: Untagged
@@ -5911,6 +5954,8 @@ MonoBehaviour:
   gentleCloseNoise: 1.2
   slamNoise: 24
   slamVolume: 1
+  closingVolume: 1
+  collision: {fileID: 3760015186354579404}
   slamPuff: {fileID: 1263674520276897097}
   oneShotSource: {fileID: 3792316385194639487}
   movementSource: {fileID: 1253871595783052439}
@@ -5954,7 +5999,7 @@ Rigidbody:
   m_IsKinematic: 1
   m_Interpolate: 0
   m_Constraints: 0
-  m_CollisionDetection: 0
+  m_CollisionDetection: 3
 --- !u!64 &4132060650410276381
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -5972,11 +6017,48 @@ MeshCollider:
   m_LayerOverridePriority: 0
   m_IsTrigger: 0
   m_ProvidesContacts: 0
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 5
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 1514203620624930178, guid: f3227046e6624947b7c68fe0c06f22dd, type: 3}
+--- !u!65 &3885108979987932287
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7028399236555358897}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1.1191208, y: 0.6877629, z: 0.35829836}
+  m_Center: {x: 0.56256044, y: 0.3568343, z: 0.18214919}
+--- !u!114 &3760015186354579404
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7028399236555358897}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15f31334ca71d074ca50dac22ecca915, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  door: {fileID: 1129538059320178477}
+  applianceRoot: {fileID: 9189855357096660452}
+  parts:
+  - {fileID: 3885108979987932287}
 --- !u!1 &7639594490734224252
 GameObject:
   m_ObjectHideFlags: 0
