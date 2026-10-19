@@ -63,6 +63,17 @@ namespace Leftovers
             screen.SetPropertyBlock(screenProperties);
         }
 
+        public void SetDigitsVisible(bool visible)
+        {
+            if (screen == null) return;
+            if (screenProperties == null) screenProperties = new MaterialPropertyBlock();
+            screen.GetPropertyBlock(screenProperties);
+            float brightness = 0f;
+            if (visible) brightness = 1f;
+            screenProperties.SetFloat("_DigitsVisible", brightness);
+            screen.SetPropertyBlock(screenProperties);
+        }
+
         public void Show(float seconds)
         {
             actualNumber = Mathf.Clamp(Mathf.CeilToInt(seconds),0,99);
@@ -96,6 +107,7 @@ namespace Leftovers
         {
             if (door != null) door.SoundEmitted -= OnDoorSound;
             glitchTime = 0f;
+            SetDigitsVisible(true);
             SetGlitch(0f);
             DrawNumber(actualNumber);
         }

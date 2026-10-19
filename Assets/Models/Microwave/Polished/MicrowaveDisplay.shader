@@ -3,6 +3,7 @@ Shader "Leftovers/Microwave Display"
     Properties
     {
         _MainTex ("Timer atlas", 2D) = "black" {}
+        _DigitsVisible ("Digits visible", Range(0,1)) = 1
         _Glitch ("Glitch", Range(0,1)) = 0
         _GlitchFrame ("Glitch frame", Float) = 0
     }
@@ -18,6 +19,7 @@ Shader "Leftovers/Microwave Display"
             sampler2D _MainTex;
             float4 _MainTex_ST;
             float _Glitch;
+            float _DigitsVisible;
             float _GlitchFrame;
             struct Input { float4 vertex: POSITION; float2 uv:TEXCOORD0; };
             struct Output { float4 vertex: SV_POSITION; float2 uv:TEXCOORD0; };
@@ -34,6 +36,7 @@ Shader "Leftovers/Microwave Display"
             }
             fixed4 frag(Output i): SV_Target
             {
+                if (_DigitsVisible < .5) return fixed4(.008,.008,.008,1);
                 float2 uv = i.uv;
                 if (_Glitch < .001) return fixed4(Sample(uv),1);
                 float band = floor(uv.y*13);

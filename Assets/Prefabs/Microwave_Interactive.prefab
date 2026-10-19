@@ -5913,7 +5913,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7705172619454855264}
-  - component: {fileID: 6925835342678238948}
+  - component: {fileID: 3544010730580439987}
   m_Layer: 0
   m_Name: Microwave model
   m_TagString: Untagged
@@ -5983,7 +5983,7 @@ Transform:
   - {fileID: 2510977073843892720}
   m_Father: {fileID: 6181771957011473226}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &6925835342678238948
+--- !u!114 &3544010730580439987
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -5992,11 +5992,15 @@ MonoBehaviour:
   m_GameObject: {fileID: 2366200217172917949}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: edf5020a5ecf409a9d8fbf412987586a, type: 3}
+  m_Script: {fileID: 11500000, guid: 4ee15196ee2d6ea4cb9bf89f6f964a72, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  shakeAngle: 0.65
-  shakeSeconds: 0.19
+  door: {fileID: 8279250213266946559}
+  slamAmount: 3
+  timerAmount: 2.5
+  slamSeconds: 0.35
+  timerFadeSeconds: 0.06
+  frequency: 18
 --- !u!1 &2589209443311440994
 GameObject:
   m_ObjectHideFlags: 0
@@ -8008,6 +8012,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   door: {fileID: 8279250213266946559}
+  vibration: {fileID: 3544010730580439987}
   turntable: {fileID: 3802149530397885925}
   insideLight: {fileID: 1111100786730919631}
   interiorFill: {fileID: 0}

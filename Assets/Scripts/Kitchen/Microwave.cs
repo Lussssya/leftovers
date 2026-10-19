@@ -5,6 +5,7 @@ namespace Leftovers
     public class Microwave : MonoBehaviour
     {
         public FridgeDoor door;
+        public MicrowaveVibration vibration;
         public Transform turntable;
         public Light insideLight;
         public Light interiorFill;
@@ -39,15 +40,27 @@ namespace Leftovers
         float steamParticles;
         bool lightIsOn;
         float closedWait;
+        bool alarmPlaying;
+        float[] beepLevels;
 
         void Awake()
         {
+            SetupSteamFlow(chamberSteam);
+            if (food != null) SetupSteamFlow(food.steam);
             if (Camera.main != null) Camera.main.depthTextureMode |= DepthTextureMode.Depth;
             if (cookingSound != null)
             {
                 motorVolume = cookingSound.volume;
                 cookingSound.volume = 0f;
             }
+        }
+
+        void SetupSteamFlow(ParticleSystem steam)
+        {
+            if (steam == null) return;
+            MicrowaveSteamFlow flow = steam.GetComponent<MicrowaveSteamFlow>();
+            if (flow == null) flow = steam.gameObject.AddComponent<MicrowaveSteamFlow>();
+            flow.microwave = this;
         }
 
         void LateUpdate()
@@ -141,6 +154,7 @@ namespace Leftovers
             {
                 display.Show(RemainingSeconds);
             }
+            UpdateAlarm();
             UpdateSteam(seconds);
         }
 
@@ -184,8 +198,48 @@ namespace Leftovers
             SetLight(true);
             if (beepSource != null && beep != null)
             {
-                beepSource.PlayOneShot(beep);
+                PrepareAlarm();
+                beepSource.clip = beep;
+                beepSource.loop = false;
+                beepSource.Play();
+                alarmPlaying = true;
             }
+        }
+
+        void PrepareAlarm()
+        {
+            beep.LoadAudioData();
+            float[] samples = new float[beep.samples * beep.channels];
+            if (!beep.GetData(samples, 0)) return;
+            int blockSize = Mathf.Max(1, beep.frequency / 100) * beep.channels;
+            beepLevels = new float[Mathf.CeilToInt((float)samples.Length / blockSize)];
+            float loudest = 0f;
+            for (int i = 0; i < samples.Length; i++)
+            {
+                int block = i / blockSize;
+                beepLevels[block] = Mathf.Max(beepLevels[block], Mathf.Abs(samples[i]));
+                loudest = Mathf.Max(loudest, Mathf.Abs(samples[i]));
+            }
+            for (int i = 0; i < beepLevels.Length; i++)
+            {
+                beepLevels[i] /= Mathf.Max(0.001f, loudest);
+            }
+        }
+
+        void UpdateAlarm()
+        {
+            bool beeping = false;
+            if (alarmPlaying)
+            {
+                alarmPlaying = beepSource != null && beepSource.isPlaying;
+                if (alarmPlaying && beepLevels != null)
+                {
+                    int block = Mathf.Clamp(Mathf.FloorToInt(beepSource.time * 100f), 0, beepLevels.Length - 1);
+                    beeping = beepLevels[block] > 0.12f;
+                }
+            }
+            if (vibration != null) vibration.SetTimerBeep(beeping);
+            if (display != null) display.SetDigitsVisible(!alarmPlaying || beeping);
         }
 
         void UpdateSteam(float seconds)
@@ -202,7 +256,7 @@ namespace Leftovers
                 if (trappedSteam <= 0f || door.Angle < 8f || food == null || !food.IsCooked) return;
                 float released = Mathf.Min(trappedSteam, seconds * 0.5f);
                 trappedSteam -= released;
-                steamParticles += released * 46f;
+                steamParticles += released * 34f;
             }
             if (!chamberSteam.isPlaying) chamberSteam.Play();
             int count = Mathf.FloorToInt(steamParticles);
@@ -257,6 +311,7 @@ namespace Leftovers
             }
 
             food = item;
+            SetupSteamFlow(food.steam);
             item.StopCooling();
             food.Place();
             food.transform.SetParent(turntable, false);
@@ -286,6 +341,9 @@ namespace Leftovers
         void OnDisable()
         {
             IsCooking = false;
+            alarmPlaying = false;
+            if (beepSource != null) beepSource.Stop();
+            UpdateAlarm();
             if (cookingSound != null)
             {
                 cookingSound.Stop();

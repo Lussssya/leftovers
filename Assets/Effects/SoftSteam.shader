@@ -15,8 +15,10 @@ Shader "Leftovers/Soft Steam"
             #include "UnityCG.cginc"
             sampler2D_float _CameraDepthTexture;
             float4 _Color;
+            float _MicrowaveSteam;
+            float4x4 _SteamWorldToLocal;
             struct Input { float4 vertex:POSITION; float4 color:COLOR; float2 uv:TEXCOORD0; };
-            struct Output { float4 vertex:SV_POSITION; float4 color:COLOR; float2 uv:TEXCOORD0; float4 screen:TEXCOORD1; };
+            struct Output { float4 vertex:SV_POSITION; float4 color:COLOR; float2 uv:TEXCOORD0; float4 screen:TEXCOORD1; float3 world:TEXCOORD2; };
             Output vert(Input v)
             {
                 Output o;
@@ -25,6 +27,7 @@ Shader "Leftovers/Soft Steam"
                 COMPUTE_EYEDEPTH(o.screen.z);
                 o.color=v.color*_Color;
                 o.uv=v.uv;
+                o.world=mul(unity_ObjectToWorld,v.vertex).xyz;
                 return o;
             }
             float hash(float2 p) { return frac(sin(dot(p,float2(127.1,311.7)))*43758.5453); }
@@ -48,7 +51,16 @@ Shader "Leftovers/Soft Steam"
                 float feather=pow(saturate(1-dot(edge,edge)),1.6);
                 float depth=LinearEyeDepth(SAMPLE_DEPTH_TEXTURE_PROJ(_CameraDepthTexture,UNITY_PROJ_COORD(i.screen)));
                 float soft=saturate((depth-i.screen.z)*7);
-                return fixed4(i.color.rgb,i.color.a*density*feather*soft);
+                float shellFade=1;
+                if (_MicrowaveSteam > .5)
+                {
+                    float3 local=mul(_SteamWorldToLocal,float4(i.world,1)).xyz;
+                    float inside=1-smoothstep(.215,.245,local.z);
+                    float ceiling=saturate((.385-local.y)/.035);
+                    float sides=saturate((local.x+.185)/.025)*saturate((.295-local.x)/.025);
+                    shellFade=lerp(1,ceiling*sides,inside);
+                }
+                return fixed4(i.color.rgb,i.color.a*density*feather*soft*shellFade);
             }
             ENDCG
         }

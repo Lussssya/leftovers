@@ -1,1 +1,3 @@
 Microwave opening/closing, slam, and completion recordings supplied by the user in Downloads on October 17, 2026. Original filenames: microwave open and close.mp3, Microwave slam.mp3, microwave beep.mp3. Opening is the first event; closing is the second. The start cue is a 140 ms excerpt of the first completion tone. Cooking motor/fan hum is an original synthesized loop. Original recordings remain unchanged.
+
+Gentle closing updated October 20, 2026 from the second event (2.64–3.42 seconds) of the user-supplied 49603404-microwave-door-open-amp-closing-326196.mp3. Opening was not used. Closing was lightly filtered, level-matched, and faded; the source recording is unchanged.
