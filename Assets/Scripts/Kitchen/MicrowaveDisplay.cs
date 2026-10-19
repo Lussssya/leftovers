@@ -6,7 +6,6 @@ namespace Leftovers
     {
         public GameObject[] tens;
         public GameObject[] ones;
-<<<<<<< Updated upstream
         public Renderer screen;
         public FridgeDoor door;
         public float glitchSeconds = 0.5f;
@@ -99,31 +98,6 @@ namespace Leftovers
             glitchTime = 0f;
             SetGlitch(0f);
             DrawNumber(actualNumber);
-=======
-
-        string[] numbers = { "1111110", "0110000", "1101101", "1111001", "0110011", "1011011", "1011111", "1110000", "1111111", "1111011" };
-        int lastNumber = -1;
-
-        public void Show(float seconds)
-        {
-            int number = Mathf.Clamp(Mathf.CeilToInt(seconds), 0, 99);
-            if (number == lastNumber)
-            {
-                return;
-            }
-
-            lastNumber = number;
-            SetDigit(tens, number / 10);
-            SetDigit(ones, number % 10);
-        }
-
-        void SetDigit(GameObject[] segments, int number)
-        {
-            for (int i = 0; i < segments.Length; i++)
-            {
-                segments[i].SetActive(numbers[number][i] == '1');
-            }
->>>>>>> Stashed changes
         }
     }
 }

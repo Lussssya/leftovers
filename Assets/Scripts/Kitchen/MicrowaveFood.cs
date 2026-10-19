@@ -8,7 +8,6 @@ namespace Leftovers
         public Renderer bread;
         public Material cookedMaterial;
         public float heatedSeconds;
-<<<<<<< Updated upstream
         public Vector3 steamOrigin;
         public bool IsCooked { get; private set; }
         public bool IsHeld { get; set; }
@@ -16,11 +15,6 @@ namespace Leftovers
         float coolingTime = -1f;
         float steamRate = 7f;
 
-=======
-        public bool IsCooked { get; private set; }
-        public bool IsHeld { get; set; }
-
->>>>>>> Stashed changes
         Rigidbody body;
         BoxCollider[] solidParts;
         RaycastHit[] hits = new RaycastHit[64];
@@ -31,7 +25,6 @@ namespace Leftovers
             solidParts = GetComponentsInChildren<BoxCollider>();
         }
 
-<<<<<<< Updated upstream
         public Vector3 SteamPosition()
         {
             return transform.TransformPoint(steamOrigin);
@@ -82,8 +75,6 @@ namespace Leftovers
             if (steam != null) steam.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         }
 
-=======
->>>>>>> Stashed changes
         public void Hold()
         {
             IsHeld = true;
@@ -189,18 +180,6 @@ namespace Leftovers
             {
                 bread.sharedMaterial = cookedMaterial;
             }
-<<<<<<< Updated upstream
         }
     }
 }
-
-
-=======
-            if (steam != null)
-            {
-                steam.Play();
-            }
-        }
-    }
-}
->>>>>>> Stashed changes

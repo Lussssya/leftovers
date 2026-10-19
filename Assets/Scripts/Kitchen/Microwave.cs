@@ -7,10 +7,7 @@ namespace Leftovers
         public FridgeDoor door;
         public Transform turntable;
         public Light insideLight;
-<<<<<<< Updated upstream
         public Light interiorFill;
-=======
->>>>>>> Stashed changes
         public Renderer lamp;
         public Material lampOn;
         public Material lampOff;
@@ -36,17 +33,13 @@ namespace Leftovers
 
         float lightWait;
         float steamTime;
-<<<<<<< Updated upstream
         float trappedSteam;
         float motorVolume;
         ParticleSystem.Particle[] steamPuffs = new ParticleSystem.Particle[400];
-=======
->>>>>>> Stashed changes
         float steamParticles;
         bool lightIsOn;
         float closedWait;
 
-<<<<<<< Updated upstream
         void Awake()
         {
             if (Camera.main != null) Camera.main.depthTextureMode |= DepthTextureMode.Depth;
@@ -57,8 +50,6 @@ namespace Leftovers
             }
         }
 
-=======
->>>>>>> Stashed changes
         void LateUpdate()
         {
             Step(Time.deltaTime);
@@ -82,11 +73,8 @@ namespace Leftovers
                 else
                 {
                     SetLight(false);
-<<<<<<< Updated upstream
                     if (food != null) food.HideSteam();
                     if (chamberSteam != null) chamberSteam.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-=======
->>>>>>> Stashed changes
                 }
             }
 
@@ -140,14 +128,10 @@ namespace Leftovers
                 {
                     cookingSound.Play();
                 }
-<<<<<<< Updated upstream
                 float targetVolume = 0f;
                 if (IsCooking) targetVolume = motorVolume;
                 cookingSound.volume = Mathf.MoveTowards(cookingSound.volume, targetVolume, motorVolume * seconds / 0.25f);
                 if (!IsCooking && cookingSound.volume <= 0.001f)
-=======
-                if (!IsCooking && cookingSound.isPlaying)
->>>>>>> Stashed changes
                 {
                     cookingSound.Stop();
                 }
@@ -175,7 +159,6 @@ namespace Leftovers
             }
             if (food.IsCooked)
             {
-<<<<<<< Updated upstream
                 food.ShowSteam();
                 steamTime = steamSeconds;
                 steamParticles = 0f;
@@ -190,10 +173,6 @@ namespace Leftovers
                     }
                     chamberSteam.SetParticles(steamPuffs, count);
                 }
-=======
-                steamTime = steamSeconds;
-                steamParticles = 0f;
->>>>>>> Stashed changes
             }
         }
 
@@ -211,7 +190,6 @@ namespace Leftovers
 
         void UpdateSteam(float seconds)
         {
-<<<<<<< Updated upstream
             if (chamberSteam == null) return;
             if (!IsOpen)
             {
@@ -243,18 +221,6 @@ namespace Leftovers
                 puff.position = transform.TransformPoint(position);
                 chamberSteam.Emit(puff, 1);
             }
-=======
-            if (steamTime <= 0f || !IsOpen || chamberSteam == null)
-            {
-                return;
-            }
-
-            steamTime = Mathf.Max(0f, steamTime - seconds);
-            steamParticles += seconds * steamRate;
-            int count = Mathf.FloorToInt(steamParticles);
-            steamParticles -= count;
-            chamberSteam.Emit(count);
->>>>>>> Stashed changes
         }
 
         void SetLight(bool on)
@@ -262,10 +228,7 @@ namespace Leftovers
             if (insideLight != null)
             {
                 insideLight.enabled = on;
-<<<<<<< Updated upstream
                 if (interiorFill != null) interiorFill.enabled = on;
-=======
->>>>>>> Stashed changes
             }
             if (lamp != null && lightIsOn != on)
             {
@@ -294,10 +257,7 @@ namespace Leftovers
             }
 
             food = item;
-<<<<<<< Updated upstream
             item.StopCooling();
-=======
->>>>>>> Stashed changes
             food.Place();
             food.transform.SetParent(turntable, false);
             food.transform.localPosition = new Vector3(0f, 0.002f, 0f);
@@ -315,10 +275,7 @@ namespace Leftovers
                 return false;
             }
 
-<<<<<<< Updated upstream
             item.StartCooling();
-=======
->>>>>>> Stashed changes
             food = null;
             item.transform.SetParent(null, true);
             IsFinished = false;
@@ -336,9 +293,3 @@ namespace Leftovers
         }
     }
 }
-<<<<<<< Updated upstream
-
-
-
-=======
->>>>>>> Stashed changes
