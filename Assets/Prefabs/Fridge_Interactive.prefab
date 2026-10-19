@@ -745,6 +745,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   door: {fileID: 7241520988606247391}
+  highlightMesh: {fileID: 4300000, guid: 641b9eb7b7b8b4de9857e704bf6d6114, type: 2}
 --- !u!82 &2387006200757296948
 AudioSource:
   m_ObjectHideFlags: 0
@@ -11138,6 +11139,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   door: {fileID: 1129538059320178477}
+  highlightMesh: {fileID: 4300000, guid: 225d34503318b4ee78439f8a13cd40ab, type: 2}
 --- !u!82 &3792316385194639487
 AudioSource:
   m_ObjectHideFlags: 0

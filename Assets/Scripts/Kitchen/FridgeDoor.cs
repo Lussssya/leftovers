@@ -35,6 +35,7 @@ namespace Leftovers
         [Range(0f, 2f)]
         public float slamVolume = 1f;
         public ParticleSystem slamPuff;
+        public MeshFilter puffSurface;
         public AudioSource oneShotSource;
         public AudioSource movementSource;
         public AudioClip[] openingClips;

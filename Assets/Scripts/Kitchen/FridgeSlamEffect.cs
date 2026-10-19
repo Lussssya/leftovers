@@ -35,7 +35,18 @@ namespace Leftovers
 
         void EmitPuff(FridgeDoor door)
         {
-            Bounds bounds = door.GetComponent<MeshFilter>().sharedMesh.bounds;
+            MeshFilter surface = door.puffSurface;
+            if (surface == null)
+            {
+                surface = door.GetComponent<MeshFilter>();
+            }
+
+            if (surface == null || surface.sharedMesh == null)
+            {
+                return;
+            }
+
+            Bounds bounds = GetDoorBounds(door, surface);
             for (int i = 0; i < 72; i++)
             {
                 float distance = (i % 18 + Random.Range(0.15f, 0.85f)) / 18f;
@@ -78,6 +89,44 @@ namespace Leftovers
                 puff.velocity = door.slamPuff.transform.InverseTransformVector(end - start) * Random.Range(0.3f, 0.5f);
                 door.slamPuff.Emit(puff, 1);
             }
+        }
+
+        Bounds GetDoorBounds(FridgeDoor door, MeshFilter surface)
+        {
+            Bounds bounds = surface.sharedMesh.bounds;
+            if (surface.transform == door.transform)
+            {
+                return bounds;
+            }
+
+            Vector3 center = surface.transform.TransformPoint(bounds.center);
+            Bounds doorBounds = new Bounds(door.transform.InverseTransformPoint(center), Vector3.zero);
+            for (int x = 0; x < 2; x++)
+            {
+                for (int y = 0; y < 2; y++)
+                {
+                    for (int z = 0; z < 2; z++)
+                    {
+                        Vector3 corner = bounds.min;
+                        if (x == 1)
+                        {
+                            corner.x = bounds.max.x;
+                        }
+                        if (y == 1)
+                        {
+                            corner.y = bounds.max.y;
+                        }
+                        if (z == 1)
+                        {
+                            corner.z = bounds.max.z;
+                        }
+                        Vector3 worldPoint = surface.transform.TransformPoint(corner);
+                        doorBounds.Encapsulate(door.transform.InverseTransformPoint(worldPoint));
+                    }
+                }
+            }
+
+            return doorBounds;
         }
 
         void LateUpdate()
