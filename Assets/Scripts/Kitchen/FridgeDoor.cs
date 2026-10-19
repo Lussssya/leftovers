@@ -34,6 +34,8 @@ namespace Leftovers
         public float slamNoise = 24f;
         [Range(0f, 2f)]
         public float slamVolume = 1f;
+        public float closingVolume = 1f;
+        public DoorCollision collision;
         public ParticleSystem slamPuff;
         public AudioSource oneShotSource;
         public AudioSource movementSource;
@@ -42,6 +44,7 @@ namespace Leftovers
         public AudioClip[] slamClips;
         public AudioClip movementLoop;
         public float movementVolume = 0.1f;
+        public float movementFadeSpeed = 35f;
         public DoorNoiseEvent noiseEmitted = new DoorNoiseEvent();
 
         public event Action<FridgeDoor, DoorSoundKind, float> SoundEmitted;
@@ -128,6 +131,17 @@ namespace Leftovers
             return point;
         }
 
+        public Quaternion RotationAtAngle(float angle)
+        {
+            Initialize();
+            Quaternion rotation = closedRotation * Quaternion.AngleAxis(openingDirection * angle, Vector3.up);
+            if (transform.parent != null)
+            {
+                rotation = transform.parent.rotation * rotation;
+            }
+            return rotation;
+        }
+
         void LateUpdate()
         {
             Step(Time.deltaTime);
@@ -163,6 +177,18 @@ namespace Leftovers
             }
 
             Angle = Mathf.Clamp(Angle, 0f, maximumAngle);
+            if (collision != null)
+            {
+                float safeAngle = collision.LimitAngle(previousAngle, Angle);
+                if (Mathf.Abs(safeAngle - Angle) > 0.0001f)
+                {
+                    Angle = safeAngle;
+                    targetAngle = Angle;
+                    velocity = 0f;
+                    closingSpeed = 0f;
+                    impactSpeed = 0f;
+                }
+            }
             AngularSpeed = Mathf.Abs(Angle - previousAngle) / deltaTime;
             CheckOpening();
             CheckClosing(previousAngle, impactSpeed);
@@ -254,7 +280,7 @@ namespace Leftovers
                 }
                 else
                 {
-                    Play(closingClips, Mathf.Lerp(0.14f, 0.45f, force));
+                    Play(closingClips, closingVolume * Mathf.Lerp(0.14f, 0.45f, force));
                     Emit(DoorSoundKind.GentleClose, gentleCloseNoise * (1f + force));
                 }
 
@@ -298,7 +324,7 @@ namespace Leftovers
                 volume = movementVolume * Mathf.Lerp(0.18f, 1f, Mathf.Clamp01(AngularSpeed / 150f));
             }
 
-            float smoothing = 1f - Mathf.Exp(-deltaTime * 35f);
+            float smoothing = 1f - Mathf.Exp(-deltaTime * movementFadeSpeed);
             movementLoudness = Mathf.Lerp(movementLoudness, volume, smoothing);
             movementSource.volume = movementLoudness;
             movementSource.pitch = Mathf.Lerp(0.86f, 1.12f, Mathf.Clamp01(AngularSpeed / 180f));
