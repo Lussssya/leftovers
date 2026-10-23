@@ -7,6 +7,7 @@ namespace Leftovers
     public class KetchupFlip : MonoBehaviour
     {
         [Header("Interaction")]
+        [SerializeField] private FridgeDoorOpenGate doorGate;
         [SerializeField] Camera interactionCamera;
         [SerializeField] Transform holdPoint;
         [SerializeField] float pickupReach = 10f;
@@ -105,6 +106,22 @@ namespace Leftovers
 
         void TryInitialPickup()
         {
+            if (doorGate == null)
+            {
+                Debug.LogError("Door Gate reference is missing!");
+                return;
+            }
+
+            if (!doorGate.IsOpen)
+            {
+                Debug.Log("Open the upper refrigerator door first!");
+                return;
+            }
+            if (doorGate != null && !doorGate.IsOpen)
+            {
+                Debug.Log("Open the upper fridge door first!");
+                return;
+            }
             Debug.Log("E pressed - trying to pick up ketchup");
 
             if (interactionCamera == null)
