@@ -7,42 +7,70 @@ namespace Leftovers
         CameraFollow viewController;
         MouseDoorInteractor doorInteractor;
         MouseCabinetInteractor cabinetInteractor;
-        Renderer highlightedHandle;
+        ProductInteractor productInteractor;
+        Renderer highlightedRenderer;
         MaterialPropertyBlock originalColors;
-        bool handleWasVisible;
+        bool rendererWasVisible;
         GUIStyle labelStyle;
         GUIStyle titleStyle;
+        GUIStyle productNameStyle;
+        GUIStyle productControlStyle;
 
         Color highlightColor = new Color(1f, 0.8f, 0.35f, 1f);
+        Color productHighlightColor = new Color(1f, 0.72f, 0.2f, 1f);
 
         void Awake()
         {
             viewController = GetComponent<CameraFollow>();
             doorInteractor = GetComponent<MouseDoorInteractor>();
             cabinetInteractor = GetComponent<MouseCabinetInteractor>();
+            productInteractor = GetComponent<ProductInteractor>();
         }
 
         void LateUpdate()
         {
-            Renderer nextHandle = null;
+            Renderer nextRenderer = null;
+            Color nextHighlightColor = highlightColor;
             if (viewController != null && !viewController.IsPaused)
             {
-                nextHandle = FindHighlightedHandle();
+                nextRenderer = FindProductRenderer();
+                if (nextRenderer != null)
+                {
+                    nextHighlightColor = productHighlightColor;
+                }
+                else
+                {
+                    nextRenderer = FindHandleRenderer();
+                }
             }
 
-            if (nextHandle == highlightedHandle)
+            if (nextRenderer == highlightedRenderer)
             {
                 return;
             }
 
             ClearHighlight();
-            if (nextHandle != null)
+            if (nextRenderer != null)
             {
-                Highlight(nextHandle);
+                Highlight(nextRenderer, nextHighlightColor);
             }
         }
 
-        Renderer FindHighlightedHandle()
+        Renderer FindProductRenderer()
+        {
+            if (productInteractor != null && productInteractor.TargetedProduct != null)
+            {
+                Renderer productRenderer = productInteractor.TargetedProduct.GetComponentInChildren<Renderer>();
+                if (productRenderer != null)
+                {
+                    return productRenderer;
+                }
+            }
+
+            return null;
+        }
+
+        Renderer FindHandleRenderer()
         {
             if (doorInteractor != null && doorInteractor.isActiveAndEnabled)
             {
@@ -82,49 +110,85 @@ namespace Leftovers
             return null;
         }
 
-        void Highlight(Renderer handle)
+        void Highlight(Renderer renderer, Color color)
         {
-            highlightedHandle = handle;
-            handleWasVisible = handle.enabled;
+            highlightedRenderer = renderer;
+            rendererWasVisible = renderer.enabled;
             originalColors = new MaterialPropertyBlock();
-            handle.GetPropertyBlock(originalColors);
+            renderer.GetPropertyBlock(originalColors);
             MaterialPropertyBlock colors = new MaterialPropertyBlock();
-            handle.GetPropertyBlock(colors);
-            colors.SetColor("_Color", highlightColor);
-            colors.SetColor("_BaseColor", highlightColor);
-            handle.SetPropertyBlock(colors);
-            handle.enabled = true;
+            renderer.GetPropertyBlock(colors);
+            colors.SetColor("_Color", color);
+            colors.SetColor("_BaseColor", color);
+            renderer.SetPropertyBlock(colors);
+            renderer.enabled = true;
         }
 
         void ClearHighlight()
         {
-            if (highlightedHandle != null)
+            if (highlightedRenderer != null)
             {
-                highlightedHandle.SetPropertyBlock(originalColors);
-                highlightedHandle.enabled = handleWasVisible;
+                highlightedRenderer.SetPropertyBlock(originalColors);
+                highlightedRenderer.enabled = rendererWasVisible;
             }
 
-            highlightedHandle = null;
+            highlightedRenderer = null;
             originalColors = null;
         }
 
         void OnGUI()
         {
-            if (viewController == null || !viewController.IsPaused)
+            if (viewController != null && viewController.IsPaused)
+            {
+                CreateStyles();
+                DrawPauseMenu();
+                return;
+            }
+
+            if (productInteractor == null || productInteractor.TargetedProduct == null)
             {
                 return;
             }
 
-            if (labelStyle == null)
+            CreateStyles();
+            DrawProductPrompt(productInteractor.TargetedProduct.DisplayName);
+        }
+
+        void CreateStyles()
+        {
+            if (labelStyle != null)
             {
-                labelStyle = new GUIStyle(GUI.skin.label);
-                labelStyle.alignment = TextAnchor.MiddleCenter;
-                labelStyle.normal.textColor = Color.white;
-                titleStyle = new GUIStyle(labelStyle);
-                titleStyle.fontSize = 24;
+                return;
             }
 
-            DrawPauseMenu();
+            labelStyle = new GUIStyle(GUI.skin.label);
+            labelStyle.alignment = TextAnchor.MiddleCenter;
+            labelStyle.normal.textColor = Color.white;
+            titleStyle = new GUIStyle(labelStyle);
+            titleStyle.fontSize = 24;
+            productNameStyle = new GUIStyle(labelStyle);
+            productNameStyle.fontSize = 32;
+            productNameStyle.fontStyle = FontStyle.Bold;
+            productNameStyle.normal.textColor = Color.white;
+            productControlStyle = new GUIStyle(labelStyle);
+            productControlStyle.fontSize = 20;
+        }
+
+        void DrawProductPrompt(string productName)
+        {
+            float width = 360f;
+            float height = 105f;
+            float left = Screen.width * 0.5f - width * 0.5f;
+            float top = Screen.height * 0.5f + 55f;
+            Rect panel = new Rect(left, top, width, height);
+
+            Color previousColor = GUI.color;
+            GUI.color = new Color(0f, 0f, 0f, 0.32f);
+            GUI.DrawTexture(panel, Texture2D.whiteTexture);
+            GUI.color = previousColor;
+
+            GUI.Label(new Rect(left, top + 8f, width, 44f), productName, productNameStyle);
+            GUI.Label(new Rect(left, top + 57f, width, 32f), "[E] Pick up", productControlStyle);
         }
 
         void DrawPauseMenu()
