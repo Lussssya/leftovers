@@ -5,6 +5,7 @@ namespace Leftovers
     public class Mover : MonoBehaviour
     {
         [SerializeField] float moveSpeed = 3f;
+        [SerializeField] float collisionSkin = 0.02f;
         [SerializeField] Transform movementCamera;
 
         Rigidbody playerRigidbody;
@@ -31,33 +32,30 @@ namespace Leftovers
             float horizontalInput = 0f;
             float verticalInput = 0f;
 
-            if (Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.A))
+            if (Input.GetKey(KeyCode.A))
             {
                 horizontalInput = horizontalInput - 1f;
             }
 
-            if (Input.GetKey(KeyCode.RightArrow) || Input.GetKey(KeyCode.D))
+            if (Input.GetKey(KeyCode.D))
             {
                 horizontalInput = horizontalInput + 1f;
             }
 
-            if (Input.GetKey(KeyCode.DownArrow) || Input.GetKey(KeyCode.S))
+            if (Input.GetKey(KeyCode.S))
             {
                 verticalInput = verticalInput - 1f;
             }
 
-            if (Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.W))
+            if (Input.GetKey(KeyCode.W))
             {
                 verticalInput = verticalInput + 1f;
             }
 
-            moveDirection = new Vector3(horizontalInput, 0f, verticalInput).normalized;
-
-            if (movementCamera != null)
-            {
-                Quaternion facingRotation = Quaternion.Euler(0f, movementCamera.eulerAngles.y, 0f);
-                moveDirection = facingRotation * moveDirection;
-            }
+            Vector3 horizontalForward = Vector3.ProjectOnPlane(transform.forward, Vector3.up).normalized;
+            Vector3 horizontalRight = Vector3.ProjectOnPlane(transform.right, Vector3.up).normalized;
+            moveDirection = horizontalRight * horizontalInput + horizontalForward * verticalInput;
+            moveDirection = Vector3.ClampMagnitude(moveDirection, 1f);
         }
 
         void FixedUpdate()
@@ -67,8 +65,32 @@ namespace Leftovers
                 return;
             }
 
-            Vector3 movement = moveDirection * moveSpeed * Time.deltaTime;
+            Vector3 movement = moveDirection * moveSpeed * Time.fixedDeltaTime;
+            movement = GetCollisionSafeMovement(movement);
             playerRigidbody.MovePosition(playerRigidbody.position + movement);
+        }
+
+        Vector3 GetCollisionSafeMovement(Vector3 movement)
+        {
+            float distance = movement.magnitude;
+            if (distance <= 0f)
+            {
+                return Vector3.zero;
+            }
+
+            Vector3 direction = movement / distance;
+            RaycastHit hit;
+            if (!playerRigidbody.SweepTest(
+                direction,
+                out hit,
+                distance,
+                QueryTriggerInteraction.Ignore))
+            {
+                return movement;
+            }
+
+            float safeDistance = Mathf.Max(0f, hit.distance - collisionSkin);
+            return direction * safeDistance;
         }
     }
 }

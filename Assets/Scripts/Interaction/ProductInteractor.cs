@@ -12,7 +12,7 @@ namespace Leftovers
         [SerializeField] float dropSurfaceOffset = 0.3f;
         [SerializeField] float dropRayHeight = 1.5f;
         [SerializeField] float dropRayDistance = 3f;
-        [SerializeField] float baseHorizontalReach = 3f;
+        [SerializeField] float baseHorizontalReach = 4f;
         [SerializeField] float lowProductReachBonus = 1f;
         [SerializeField] float lowProductHeightThreshold = 0.25f;
         [SerializeField] float raycastMaxDistance = 10f;

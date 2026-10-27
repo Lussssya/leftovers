@@ -909,7 +909,7 @@ Transform:
   m_GameObject: {fileID: 515320210}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.65, y: -0.45, z: 1.5}
+  m_LocalPosition: {x: 0.42, y: -0.3, z: 0.85}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -3246,7 +3246,7 @@ GameObject:
   - component: {fileID: 1396013868}
   - component: {fileID: 1396013872}
   m_Layer: 0
-  m_Name: Temporary Creak Test Player
+  m_Name: Player
   m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3262,9 +3262,10 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: -5, y: 0.5, z: -4}
-  m_LocalScale: {x: 0.75, y: 1, z: 0.75}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 2140000001}
   m_Father: {fileID: 1233853123}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!54 &1396013868
@@ -3301,7 +3302,7 @@ MeshRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1396013866}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -3355,8 +3356,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
+  m_Size: {x: 0.75, y: 1.9, z: 0.75}
+  m_Center: {x: 0, y: 0.45, z: 0}
 --- !u!33 &1396013871
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -3378,6 +3379,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   moveSpeed: 3
+  collisionSkin: 0.02
   movementCamera: {fileID: 2125495058}
 --- !u!1 &1451119629
 GameObject:
@@ -4085,7 +4087,7 @@ MonoBehaviour:
   - {fileID: 1609450982}
   - {fileID: 431132496}
   - {fileID: 1086682141}
-  placementReach: 2.5
+  placementReach: 4
 --- !u!1 &1867351457
 GameObject:
   m_ObjectHideFlags: 0
@@ -4869,6 +4871,38 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1835757833}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &2140000000
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2140000001}
+  m_Layer: 0
+  m_Name: CameraPivot
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2140000001
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2140000000}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 1.35, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 2125495058}
+  m_Father: {fileID: 1396013867}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2125495053
 GameObject:
   m_ObjectHideFlags: 0
@@ -4978,13 +5012,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2125495053}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.3345789, y: 0, z: 0, w: 0.9423678}
-  m_LocalPosition: {x: -5, y: 7.5, z: -12}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 515320211}
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 2140000001}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &2125495059
 MonoBehaviour:
@@ -4999,16 +5033,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   target: {fileID: 1396013867}
-  offset: {x: 0, y: 1.6, z: -4}
-  followSpeed: 6
-  lookHeight: 1
-  mouseSensitivity: 2
-  minimumLookAngle: -25
-  maximumLookAngle: 80
-  shoulderOffset: 1.1
-  edgeWidth: 120
-  edgeWidthFraction: 0.35
-  edgeTurnSpeed: 60
+  cameraPivot: {fileID: 2140000001}
+  edgeThreshold: 0.08
+  edgeLookSpeed: 60
+  defaultPitch: 12
+  minPitch: -6
+  maxPitch: 25
 --- !u!114 &2125495060
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5056,7 +5086,7 @@ MonoBehaviour:
   dropSurfaceOffset: 0.3
   dropRayHeight: 1.5
   dropRayDistance: 3
-  baseHorizontalReach: 3
+  baseHorizontalReach: 4
   lowProductReachBonus: 1
   lowProductHeightThreshold: 0.25
   raycastMaxDistance: 10
@@ -5073,7 +5103,6 @@ SceneRoots:
   m_Roots:
   - {fileID: 357074002}
   - {fileID: 608671547}
-  - {fileID: 2125495058}
   - {fileID: 1808336481}
   - {fileID: 1233853123}
   - {fileID: 387452360}

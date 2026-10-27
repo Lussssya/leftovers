@@ -13,8 +13,6 @@ namespace Leftovers
         CabinetPart heldPart;
         Vector2 dragAxis;
         Vector2 lastPointer;
-        CursorLockMode previousCursorMode;
-        bool previousCursorVisible;
         Vector3 heldLocalPoint;
 
         void Awake()
@@ -111,10 +109,6 @@ namespace Leftovers
                 dragAxis = Vector2.right;
             }
 
-            previousCursorMode = Cursor.lockState;
-            previousCursorVisible = Cursor.visible;
-            Cursor.lockState = CursorLockMode.Confined;
-            Cursor.visible = true;
             part.BeginHold();
         }
 
@@ -167,14 +161,6 @@ namespace Leftovers
 
             heldPart.EndHold(cancelMomentum);
             heldPart = null;
-            Cursor.lockState = previousCursorMode;
-            Cursor.visible = previousCursorVisible;
-
-            if (!Application.isFocused || !isActiveAndEnabled || !Application.isPlaying || Time.timeScale == 0f)
-            {
-                Cursor.lockState = CursorLockMode.None;
-                Cursor.visible = true;
-            }
         }
 
         void OnDisable()

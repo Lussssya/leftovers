@@ -6,16 +6,12 @@ namespace Leftovers
     public class CameraFollow : MonoBehaviour
     {
         [SerializeField] Transform target;
-        [SerializeField] Vector3 offset = new Vector3(0f, 7f, -8f);
-        [SerializeField] float followSpeed = 6f;
-        [SerializeField] float lookHeight = 0.5f;
-        [SerializeField] float mouseSensitivity = 2f;
-        [SerializeField] float minimumLookAngle = -25f;
-        [SerializeField] float maximumLookAngle = 80f;
-        [SerializeField] float shoulderOffset = 1.1f;
-        [SerializeField] float edgeWidth = 120f;
-        [SerializeField] float edgeWidthFraction = 0.35f;
-        [SerializeField] float edgeTurnSpeed = 60f;
+        [SerializeField] Transform cameraPivot;
+        [SerializeField] float edgeThreshold = 0.08f;
+        [SerializeField] float edgeLookSpeed = 60f;
+        [SerializeField] float defaultPitch = 12f;
+        [SerializeField] float minPitch = -6f;
+        [SerializeField] float maxPitch = 25f;
 
         public bool IsPaused { get; private set; }
 
@@ -37,10 +33,8 @@ namespace Leftovers
             }
         }
 
-        float horizontalAngle;
-        float verticalAngle;
+        float pitch;
         float previousTimeScale = 1f;
-        Vector3 followPosition;
         MouseDoorInteractor doorInteractor;
         MouseCabinetInteractor cabinetInteractor;
         bool skipMouseLook;
@@ -51,33 +45,42 @@ namespace Leftovers
             doorInteractor = GetComponent<MouseDoorInteractor>();
             cabinetInteractor = GetComponent<MouseCabinetInteractor>();
             viewCamera = GetComponent<Camera>();
+
+            if (cameraPivot == null)
+            {
+                cameraPivot = transform.parent;
+            }
         }
 
         void Start()
         {
-            if (target == null)
+            if (cameraPivot != null)
             {
-                return;
+                pitch = Mathf.Clamp(defaultPitch, minPitch, maxPitch);
+                ApplyPitch();
             }
 
-            followPosition = target.position;
-            Vector3 lookDirection = Vector3.up * lookHeight - offset;
-            Quaternion startingRotation = Quaternion.LookRotation(lookDirection);
-            horizontalAngle = startingRotation.eulerAngles.y;
-            verticalAngle = Mathf.DeltaAngle(0f, startingRotation.eulerAngles.x);
             SetPaused(!Application.isFocused);
-            UpdateCameraPosition();
         }
 
         void Update()
         {
+            KeepCursorAvailable();
+
             if (Input.GetKeyDown(KeyCode.Escape))
             {
                 SetPaused(!IsPaused);
             }
+
+            if (IsPaused || Time.timeScale == 0f)
+            {
+                return;
+            }
+
+            UpdateEdgeLook();
         }
 
-        void UpdateMouseLook()
+        void UpdateEdgeLook()
         {
             if (skipMouseLook)
             {
@@ -85,7 +88,8 @@ namespace Leftovers
                 return;
             }
 
-            if (IsDragging || Input.GetMouseButton(0) || Input.GetMouseButtonUp(0))
+            if (target == null || cameraPivot == null || viewCamera == null || IsDragging
+                || Input.GetMouseButton(0) || Input.GetMouseButtonUp(0))
             {
                 return;
             }
@@ -97,67 +101,39 @@ namespace Leftovers
                 return;
             }
 
-            float edgeTurnAmount = edgeTurnSpeed * mouseSensitivity * 0.5f * Time.deltaTime;
-            float horizontalEdge = GetEdgeInput(pointer.x, view.xMin, view.xMax);
-            float verticalEdge = GetEdgeInput(pointer.y, view.yMin, view.yMax);
-            horizontalAngle = horizontalAngle + horizontalEdge * edgeTurnAmount;
-            verticalAngle = verticalAngle - verticalEdge * edgeTurnAmount;
-            verticalAngle = Mathf.Clamp(verticalAngle, minimumLookAngle, maximumLookAngle);
+            float normalizedX = Mathf.InverseLerp(view.xMin, view.xMax, pointer.x);
+            float normalizedY = Mathf.InverseLerp(view.yMin, view.yMax, pointer.y);
+            float horizontalInput = GetEdgeInput(normalizedX);
+            float verticalInput = GetEdgeInput(normalizedY);
+            float lookAmount = edgeLookSpeed * Time.deltaTime;
+
+            target.Rotate(0f, horizontalInput * lookAmount, 0f, Space.World);
+            pitch = pitch - verticalInput * lookAmount;
+            pitch = Mathf.Clamp(pitch, minPitch, maxPitch);
+            ApplyPitch();
         }
 
-        float GetEdgeInput(float position, float minimum, float maximum)
+        float GetEdgeInput(float normalizedPosition)
         {
-            float viewSize = maximum - minimum;
-            float width = Mathf.Max(edgeWidth, viewSize * edgeWidthFraction);
-            width = Mathf.Min(width, viewSize * 0.45f);
-            if (width <= 0f)
+            float threshold = Mathf.Clamp(edgeThreshold, 0.01f, 0.45f);
+            if (normalizedPosition < threshold)
             {
-                return 0f;
-            }
-
-            if (position < minimum + width)
-            {
-                float amount = Mathf.InverseLerp(minimum + width, minimum, position);
+                float amount = Mathf.InverseLerp(threshold, 0f, normalizedPosition);
                 return -Mathf.SmoothStep(0f, 1f, amount);
             }
 
-            if (position > maximum - width)
+            if (normalizedPosition > 1f - threshold)
             {
-                float amount = Mathf.InverseLerp(maximum - width, maximum, position);
+                float amount = Mathf.InverseLerp(1f - threshold, 1f, normalizedPosition);
                 return Mathf.SmoothStep(0f, 1f, amount);
             }
 
             return 0f;
         }
 
-        void LateUpdate()
+        void ApplyPitch()
         {
-            if (target == null || IsPaused || Time.timeScale == 0f || IsDragging)
-            {
-                return;
-            }
-
-            UpdateMouseLook();
-            UpdateCameraPosition();
-        }
-
-        void UpdateCameraPosition()
-        {
-            float followAmount = Mathf.Clamp01(followSpeed * Time.deltaTime);
-            followPosition = Vector3.Lerp(followPosition, target.position, followAmount);
-            Vector3 lookPosition = followPosition + Vector3.up * lookHeight;
-            float followDistance = (offset - Vector3.up * lookHeight).magnitude;
-            Quaternion viewRotation = Quaternion.Euler(verticalAngle, horizontalAngle, 0f);
-            Vector3 cameraOffset = new Vector3(shoulderOffset, 0f, -followDistance);
-            Vector3 cameraPosition = lookPosition + viewRotation * cameraOffset;
-            float minimumHeight = target.position.y + 0.2f;
-            if (cameraPosition.y < minimumHeight)
-            {
-                cameraPosition.y = minimumHeight;
-            }
-
-            transform.position = cameraPosition;
-            transform.rotation = viewRotation;
+            cameraPivot.localRotation = Quaternion.Euler(pitch, 0f, 0f);
         }
 
         public void SetPaused(bool paused)
@@ -174,7 +150,11 @@ namespace Leftovers
 
             IsPaused = paused;
             skipMouseLook = true;
+            KeepCursorAvailable();
+        }
 
+        void KeepCursorAvailable()
+        {
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
         }
@@ -196,6 +176,10 @@ namespace Leftovers
             if (!focused)
             {
                 SetPaused(true);
+            }
+            else
+            {
+                KeepCursorAvailable();
             }
         }
     }

@@ -5,7 +5,7 @@ namespace Leftovers
     public class AssemblyTable : MonoBehaviour
     {
         [SerializeField] Transform[] placementPoints;
-        [SerializeField] float placementReach = 2.5f;
+        [SerializeField] float placementReach = 4f;
 
         ProductInteractable[] occupants;
 

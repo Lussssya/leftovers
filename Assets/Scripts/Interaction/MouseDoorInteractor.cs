@@ -15,8 +15,6 @@ namespace Leftovers
         public Camera InteractionCamera { get { return interactionCamera; } }
 
         Vector2 lastPointer;
-        CursorLockMode previousCursorMode;
-        bool previousCursorVisible;
         Vector3 hoverPoint;
         Vector3 heldLocalPoint;
 
@@ -109,10 +107,6 @@ namespace Leftovers
                 DragAxis = direction.normalized;
             }
 
-            previousCursorMode = Cursor.lockState;
-            previousCursorVisible = Cursor.visible;
-            Cursor.lockState = CursorLockMode.Confined;
-            Cursor.visible = true;
             door.BeginHold();
         }
 
@@ -164,15 +158,6 @@ namespace Leftovers
                 if (Held.Door != null)
                 {
                     Held.Door.EndHold(cancelMomentum);
-                }
-
-                Cursor.lockState = previousCursorMode;
-                Cursor.visible = previousCursorVisible;
-
-                if (!Application.isFocused || !isActiveAndEnabled || !Application.isPlaying || Time.timeScale == 0f)
-                {
-                    Cursor.lockState = CursorLockMode.None;
-                    Cursor.visible = true;
                 }
             }
 
