@@ -8,9 +8,11 @@ namespace Leftovers
         MouseDoorInteractor doorInteractor;
         MouseCabinetInteractor cabinetInteractor;
         ProductInteractor productInteractor;
-        Renderer highlightedRenderer;
-        MaterialPropertyBlock originalColors;
-        bool rendererWasVisible;
+        ProductInteractable highlightedProduct;
+        Renderer highlightedHandle;
+        Renderer[] highlightedRenderers;
+        MaterialPropertyBlock[] originalColors;
+        bool[] rendererWasVisible;
         GUIStyle labelStyle;
         GUIStyle titleStyle;
         GUIStyle productNameStyle;
@@ -29,45 +31,48 @@ namespace Leftovers
 
         void LateUpdate()
         {
-            Renderer nextRenderer = null;
-            Color nextHighlightColor = highlightColor;
+            ProductInteractable nextProduct = null;
+            Renderer nextHandle = null;
             if (viewController != null && !viewController.IsPaused)
             {
-                nextRenderer = FindProductRenderer();
-                if (nextRenderer != null)
+                if (productInteractor != null)
                 {
-                    nextHighlightColor = productHighlightColor;
+                    nextProduct = productInteractor.TargetedProduct;
                 }
-                else
+
+                if (nextProduct == null)
                 {
-                    nextRenderer = FindHandleRenderer();
+                    nextHandle = FindHandleRenderer();
                 }
             }
 
-            if (nextRenderer == highlightedRenderer)
+            if (nextProduct == highlightedProduct && nextHandle == highlightedHandle)
             {
                 return;
             }
 
             ClearHighlight();
-            if (nextRenderer != null)
+            if (nextProduct != null)
             {
-                Highlight(nextRenderer, nextHighlightColor);
+                HighlightProduct(nextProduct);
+            }
+            else if (nextHandle != null)
+            {
+                HighlightHandle(nextHandle);
             }
         }
 
-        Renderer FindProductRenderer()
+        void HighlightProduct(ProductInteractable product)
         {
-            if (productInteractor != null && productInteractor.TargetedProduct != null)
-            {
-                Renderer productRenderer = productInteractor.TargetedProduct.GetComponentInChildren<Renderer>();
-                if (productRenderer != null)
-                {
-                    return productRenderer;
-                }
-            }
+            highlightedProduct = product;
+            Renderer[] renderers = product.GetComponentsInChildren<Renderer>(true);
+            Highlight(renderers, productHighlightColor, false);
+        }
 
-            return null;
+        void HighlightHandle(Renderer handle)
+        {
+            highlightedHandle = handle;
+            Highlight(new Renderer[] { handle }, highlightColor, true);
         }
 
         Renderer FindHandleRenderer()
@@ -110,30 +115,56 @@ namespace Leftovers
             return null;
         }
 
-        void Highlight(Renderer renderer, Color color)
+        void Highlight(Renderer[] renderers, Color color, bool showWhileHighlighted)
         {
-            highlightedRenderer = renderer;
-            rendererWasVisible = renderer.enabled;
-            originalColors = new MaterialPropertyBlock();
-            renderer.GetPropertyBlock(originalColors);
-            MaterialPropertyBlock colors = new MaterialPropertyBlock();
-            renderer.GetPropertyBlock(colors);
-            colors.SetColor("_Color", color);
-            colors.SetColor("_BaseColor", color);
-            renderer.SetPropertyBlock(colors);
-            renderer.enabled = true;
+            highlightedRenderers = renderers;
+            originalColors = new MaterialPropertyBlock[renderers.Length];
+            rendererWasVisible = new bool[renderers.Length];
+
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                Renderer renderer = renderers[i];
+                if (renderer == null)
+                {
+                    continue;
+                }
+
+                rendererWasVisible[i] = renderer.enabled;
+                originalColors[i] = new MaterialPropertyBlock();
+                renderer.GetPropertyBlock(originalColors[i]);
+                MaterialPropertyBlock colors = new MaterialPropertyBlock();
+                renderer.GetPropertyBlock(colors);
+                colors.SetColor("_Color", color);
+                colors.SetColor("_BaseColor", color);
+                renderer.SetPropertyBlock(colors);
+
+                if (showWhileHighlighted)
+                {
+                    renderer.enabled = true;
+                }
+            }
         }
 
         void ClearHighlight()
         {
-            if (highlightedRenderer != null)
+            if (highlightedRenderers != null)
             {
-                highlightedRenderer.SetPropertyBlock(originalColors);
-                highlightedRenderer.enabled = rendererWasVisible;
+                for (int i = 0; i < highlightedRenderers.Length; i++)
+                {
+                    Renderer renderer = highlightedRenderers[i];
+                    if (renderer != null)
+                    {
+                        renderer.SetPropertyBlock(originalColors[i]);
+                        renderer.enabled = rendererWasVisible[i];
+                    }
+                }
             }
 
-            highlightedRenderer = null;
+            highlightedProduct = null;
+            highlightedHandle = null;
+            highlightedRenderers = null;
             originalColors = null;
+            rendererWasVisible = null;
         }
 
         void OnGUI()
@@ -145,13 +176,23 @@ namespace Leftovers
                 return;
             }
 
-            if (productInteractor == null || productInteractor.TargetedProduct == null)
+            if (productInteractor == null)
             {
                 return;
             }
 
             CreateStyles();
-            DrawProductPrompt(productInteractor.TargetedProduct.DisplayName);
+            if (productInteractor.HeldProduct != null)
+            {
+                string heldControl = productInteractor.CanPlaceHeldProduct
+                    ? "[E] Place"
+                    : "[E] Drop";
+                DrawProductPrompt(productInteractor.HeldProduct.DisplayName, heldControl);
+            }
+            else if (productInteractor.TargetedProduct != null)
+            {
+                DrawProductPrompt(productInteractor.TargetedProduct.DisplayName, "[E] Pick up");
+            }
         }
 
         void CreateStyles()
@@ -174,7 +215,7 @@ namespace Leftovers
             productControlStyle.fontSize = 20;
         }
 
-        void DrawProductPrompt(string productName)
+        void DrawProductPrompt(string productName, string controlText)
         {
             float width = 360f;
             float height = 105f;
@@ -188,7 +229,7 @@ namespace Leftovers
             GUI.color = previousColor;
 
             GUI.Label(new Rect(left, top + 8f, width, 44f), productName, productNameStyle);
-            GUI.Label(new Rect(left, top + 57f, width, 32f), "[E] Pick up", productControlStyle);
+            GUI.Label(new Rect(left, top + 57f, width, 32f), controlText, productControlStyle);
         }
 
         void DrawPauseMenu()

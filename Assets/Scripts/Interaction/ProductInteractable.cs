@@ -9,6 +9,16 @@ namespace Leftovers
         [SerializeField] BoxCollider hoverArea;
 
         Collider[] productColliders;
+        bool[] colliderEnabledStates;
+        Rigidbody productRigidbody;
+        Transform previousParent;
+        bool rigidbodyWasKinematic;
+        bool rigidbodyUsedGravity;
+        bool rigidbodyDetectedCollisions;
+        bool hasSavedRigidbodyState;
+        AssemblyTable placedTable;
+
+        public bool IsHeld { get; private set; }
 
         public string DisplayName
         {
@@ -26,7 +36,7 @@ namespace Leftovers
         void Awake()
         {
             EnsureHoverArea();
-            productColliders = GetComponentsInChildren<Collider>();
+            CacheProductComponents();
             UpdateHoverArea();
         }
 
@@ -82,6 +92,153 @@ namespace Leftovers
         public bool IsHoverArea(Collider candidate)
         {
             return hoverArea != null && candidate == hoverArea;
+        }
+
+        public void PickUp(Transform holdPoint)
+        {
+            if (IsHeld || holdPoint == null)
+            {
+                return;
+            }
+
+            bool wasPlaced = placedTable != null;
+            if (wasPlaced)
+            {
+                placedTable.ReleaseProduct(this);
+                placedTable = null;
+            }
+            else
+            {
+                previousParent = transform.parent;
+            }
+
+            CacheProductComponents();
+            SaveAndDisableColliders();
+            DisableRigidbody(!wasPlaced);
+            IsHeld = true;
+            transform.SetParent(holdPoint, true);
+            transform.localPosition = Vector3.zero;
+            transform.localRotation = Quaternion.identity;
+        }
+
+        public void Drop(Vector3 position, Quaternion rotation)
+        {
+            if (!IsHeld)
+            {
+                return;
+            }
+
+            transform.SetParent(previousParent, true);
+            transform.SetPositionAndRotation(position, rotation);
+            RestoreColliders();
+            RestoreRigidbody();
+            hasSavedRigidbodyState = false;
+            IsHeld = false;
+        }
+
+        public void PlaceOnTable(AssemblyTable table, Transform placementPoint)
+        {
+            if (!IsHeld || table == null || placementPoint == null)
+            {
+                return;
+            }
+
+            transform.SetParent(placementPoint, false);
+            transform.localPosition = Vector3.zero;
+            transform.localRotation = Quaternion.identity;
+            RestoreColliders();
+            KeepRigidbodyFixed();
+            placedTable = table;
+            IsHeld = false;
+        }
+
+        void CacheProductComponents()
+        {
+            productColliders = GetComponentsInChildren<Collider>(true);
+            colliderEnabledStates = new bool[productColliders.Length];
+            productRigidbody = GetComponent<Rigidbody>();
+        }
+
+        void SaveAndDisableColliders()
+        {
+            for (int i = 0; i < productColliders.Length; i++)
+            {
+                Collider productCollider = productColliders[i];
+                if (productCollider == null)
+                {
+                    continue;
+                }
+
+                colliderEnabledStates[i] = productCollider.enabled;
+                productCollider.enabled = false;
+            }
+        }
+
+        void RestoreColliders()
+        {
+            for (int i = 0; i < productColliders.Length; i++)
+            {
+                Collider productCollider = productColliders[i];
+                if (productCollider != null)
+                {
+                    productCollider.enabled = colliderEnabledStates[i];
+                }
+            }
+        }
+
+        void DisableRigidbody(bool saveState)
+        {
+            if (productRigidbody == null)
+            {
+                return;
+            }
+
+            if (saveState || !hasSavedRigidbodyState)
+            {
+                rigidbodyWasKinematic = productRigidbody.isKinematic;
+                rigidbodyUsedGravity = productRigidbody.useGravity;
+                rigidbodyDetectedCollisions = productRigidbody.detectCollisions;
+                hasSavedRigidbodyState = true;
+            }
+
+            if (!productRigidbody.isKinematic)
+            {
+                productRigidbody.velocity = Vector3.zero;
+                productRigidbody.angularVelocity = Vector3.zero;
+            }
+
+            productRigidbody.useGravity = false;
+            productRigidbody.detectCollisions = false;
+            productRigidbody.isKinematic = true;
+        }
+
+        void RestoreRigidbody()
+        {
+            if (productRigidbody == null)
+            {
+                return;
+            }
+
+            productRigidbody.isKinematic = rigidbodyWasKinematic;
+            productRigidbody.useGravity = rigidbodyUsedGravity;
+            productRigidbody.detectCollisions = rigidbodyDetectedCollisions;
+            if (!productRigidbody.isKinematic)
+            {
+                productRigidbody.velocity = Vector3.zero;
+                productRigidbody.angularVelocity = Vector3.zero;
+            }
+        }
+
+        void KeepRigidbodyFixed()
+        {
+            if (productRigidbody == null)
+            {
+                return;
+            }
+
+            productRigidbody.isKinematic = true;
+            productRigidbody.useGravity = false;
+            productRigidbody.detectCollisions = rigidbodyDetectedCollisions;
         }
 
         void EnsureHoverArea()
@@ -206,11 +363,6 @@ namespace Leftovers
             Gizmos.color = new Color(1f, 0.72f, 0.2f, 0.8f);
             Gizmos.matrix = hoverArea.transform.localToWorldMatrix;
             Gizmos.DrawWireCube(hoverArea.center, hoverArea.size);
-        }
-
-        public void Interact()
-        {
-            Debug.Log("Pick up requested for " + DisplayName, this);
         }
     }
 }

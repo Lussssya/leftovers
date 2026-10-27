@@ -6,6 +6,12 @@ namespace Leftovers
     {
         [SerializeField] Camera interactionCamera;
         [SerializeField] Transform interactionOrigin;
+        [SerializeField] Transform holdPoint;
+        [SerializeField] AssemblyTable assemblyTable;
+        [SerializeField] float dropDistance = 1.5f;
+        [SerializeField] float dropSurfaceOffset = 0.3f;
+        [SerializeField] float dropRayHeight = 1.5f;
+        [SerializeField] float dropRayDistance = 3f;
         [SerializeField] float baseHorizontalReach = 3f;
         [SerializeField] float lowProductReachBonus = 1f;
         [SerializeField] float lowProductHeightThreshold = 0.25f;
@@ -17,6 +23,16 @@ namespace Leftovers
         [SerializeField] LayerMask interactionLayers = ~0;
 
         public ProductInteractable TargetedProduct { get; private set; }
+        public ProductInteractable HeldProduct { get; private set; }
+
+        public bool CanPlaceHeldProduct
+        {
+            get
+            {
+                return HeldProduct != null && assemblyTable != null && assemblyTable.HasSpace
+                    && assemblyTable.IsInRange(GetInteractionOriginPosition());
+            }
+        }
 
         float lastTargetedTime;
 
@@ -36,12 +52,105 @@ namespace Leftovers
                 return;
             }
 
+            if (HeldProduct != null)
+            {
+                ClearTarget();
+                if (Input.GetKeyDown(KeyCode.E))
+                {
+                    InteractWithHeldProduct();
+                }
+
+                return;
+            }
+
             Physics.SyncTransforms();
             UpdateTargetSelection();
             if (TargetedProduct != null && Input.GetKeyDown(KeyCode.E))
             {
-                TargetedProduct.Interact();
+                PickUpTargetedProduct();
             }
+        }
+
+        void InteractWithHeldProduct()
+        {
+            if (!TryPlaceHeldProduct())
+            {
+                DropHeldProduct();
+            }
+        }
+
+        bool TryPlaceHeldProduct()
+        {
+            if (!CanPlaceHeldProduct)
+            {
+                return false;
+            }
+
+            ProductInteractable product = HeldProduct;
+            if (!assemblyTable.TryPlace(product))
+            {
+                return false;
+            }
+
+            HeldProduct = null;
+            ClearTarget();
+            return true;
+        }
+
+        void PickUpTargetedProduct()
+        {
+            if (HeldProduct != null || TargetedProduct == null || holdPoint == null)
+            {
+                return;
+            }
+
+            HeldProduct = TargetedProduct;
+            ClearTarget();
+            HeldProduct.PickUp(holdPoint);
+        }
+
+        void DropHeldProduct()
+        {
+            if (HeldProduct == null)
+            {
+                return;
+            }
+
+            Vector3 dropPosition = FindDropPosition();
+            float cameraYaw = interactionCamera.transform.eulerAngles.y;
+            Quaternion dropRotation = Quaternion.Euler(0f, cameraYaw, 0f);
+            HeldProduct.Drop(dropPosition, dropRotation);
+            HeldProduct = null;
+            ClearTarget();
+        }
+
+        Vector3 FindDropPosition()
+        {
+            Vector3 origin = GetInteractionOriginPosition();
+            Vector3 forward = Vector3.ProjectOnPlane(interactionCamera.transform.forward, Vector3.up);
+            if (forward.sqrMagnitude < 0.001f)
+            {
+                forward = Vector3.ProjectOnPlane(interactionCamera.transform.up, Vector3.up);
+            }
+
+            forward.Normalize();
+            Vector3 position = origin + forward * dropDistance;
+            position.y = origin.y + dropSurfaceOffset;
+
+            Vector3 rayStart = position + Vector3.up * dropRayHeight;
+            RaycastHit hit;
+            if (Physics.Raycast(
+                rayStart,
+                Vector3.down,
+                out hit,
+                dropRayDistance,
+                interactionLayers,
+                QueryTriggerInteraction.Ignore))
+            {
+                position = hit.point + Vector3.up * dropSurfaceOffset;
+            }
+
+            return position;
         }
 
         void UpdateTargetSelection()
@@ -52,6 +161,12 @@ namespace Leftovers
 
         void ChooseTarget(ProductInteractable mouseProduct)
         {
+            if (HeldProduct != null)
+            {
+                ClearTarget();
+                return;
+            }
+
             if (mouseProduct != null)
             {
                 SetTarget(mouseProduct);
@@ -188,7 +303,8 @@ namespace Leftovers
 
         bool IsValidMouseProduct(ProductInteractable product, Collider hitCollider)
         {
-            if (product == null || !product.isActiveAndEnabled || !product.IsHoverArea(hitCollider))
+            if (product == null || !product.isActiveAndEnabled || product.IsHeld
+                || !product.IsHoverArea(hitCollider))
             {
                 return false;
             }
@@ -266,7 +382,7 @@ namespace Leftovers
             }
 
             ProductInteractable product = hit.collider.GetComponentInParent<ProductInteractable>();
-            if (product == null || !product.isActiveAndEnabled)
+            if (product == null || !product.isActiveAndEnabled || product.IsHeld)
             {
                 return null;
             }
@@ -321,7 +437,7 @@ namespace Leftovers
 
         bool IsCandidate(ProductInteractable product)
         {
-            if (product == null || !product.isActiveAndEnabled)
+            if (product == null || !product.isActiveAndEnabled || product.IsHeld)
             {
                 return false;
             }
@@ -348,7 +464,7 @@ namespace Leftovers
 
         bool IsImmediatelyValid(ProductInteractable product)
         {
-            if (product == null || !product.isActiveAndEnabled)
+            if (product == null || !product.isActiveAndEnabled || product.IsHeld)
             {
                 return false;
             }
@@ -444,6 +560,10 @@ namespace Leftovers
         void OnDisable()
         {
             ClearTarget();
+            if (HeldProduct != null && interactionCamera != null)
+            {
+                DropHeldProduct();
+            }
         }
     }
 }
