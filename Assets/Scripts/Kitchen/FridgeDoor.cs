@@ -37,6 +37,7 @@ namespace Leftovers
         public float closingVolume = 1f;
         public DoorCollision collision;
         public ParticleSystem slamPuff;
+        public MeshFilter puffSurface;
         public AudioSource oneShotSource;
         public AudioSource movementSource;
         public AudioClip[] openingClips;

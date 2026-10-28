@@ -6,6 +6,7 @@ namespace Leftovers
     {
         public Camera interactionCamera;
         public float reach = 4.5f;
+        public Transform interactionOrigin;
         public float degreesPerScreenHeight = 210f;
         public LayerMask interactionLayers = ~0;
         public FridgeDoorHandle Hovered { get; private set; }
@@ -14,7 +15,8 @@ namespace Leftovers
         public Camera InteractionCamera { get { return interactionCamera; } }
 
         Vector2 lastPointer;
-        CursorLockMode previousCursorMode;
+        Vector3 hoverPoint;
+        Vector3 heldLocalPoint;
 
         void Awake()
         {
@@ -57,7 +59,13 @@ namespace Leftovers
             Physics.SyncTransforms();
             Ray ray = interactionCamera.ScreenPointToRay(pointer);
             RaycastHit hit;
-            bool found = Physics.Raycast(ray, out hit, reach, interactionLayers, QueryTriggerInteraction.Collide);
+            float rayDistance = reach;
+            if (interactionOrigin != null)
+            {
+                rayDistance = rayDistance + Vector3.Distance(interactionCamera.transform.position, interactionOrigin.position);
+            }
+
+            bool found = Physics.Raycast(ray, out hit, rayDistance, interactionLayers, QueryTriggerInteraction.Collide);
 
             if (!found)
             {
@@ -65,9 +73,20 @@ namespace Leftovers
             }
 
             FridgeDoorHandle handle = hit.collider.GetComponent<FridgeDoorHandle>();
-            if (handle != null && handle.Door != null && handle.Door.isActiveAndEnabled)
+            if (handle == null)
+            {
+                FridgeDoor door = hit.collider.GetComponent<FridgeDoor>();
+                if (door != null)
+                {
+                    handle = door.GetComponentInChildren<FridgeDoorHandle>();
+                }
+            }
+
+            if (handle != null && handle.Door != null && handle.Door.isActiveAndEnabled
+                && DistanceToObject(hit.point) <= reach)
             {
                 Hovered = handle;
+                hoverPoint = hit.point;
             }
         }
 
@@ -76,6 +95,7 @@ namespace Leftovers
             Held = Hovered;
             lastPointer = pointer;
             FridgeDoor door = Held.Door;
+            heldLocalPoint = door.transform.InverseTransformPoint(hoverPoint);
             Vector3 localHandle = door.transform.InverseTransformPoint(Held.transform.position);
             Vector2 start = interactionCamera.WorldToScreenPoint(door.PointAtAngle(localHandle, 10f));
             Vector2 end = interactionCamera.WorldToScreenPoint(door.PointAtAngle(localHandle, 90f));
@@ -87,16 +107,20 @@ namespace Leftovers
                 DragAxis = direction.normalized;
             }
 
-            previousCursorMode = Cursor.lockState;
-            Cursor.lockState = CursorLockMode.Confined;
             door.BeginHold();
         }
 
         void DragHandle(Vector2 pointer)
         {
             FridgeDoor door = Held.Door;
-            float distance = Vector3.Distance(interactionCamera.transform.position, Held.transform.position);
-            if (door == null || !door.isActiveAndEnabled || !door.IsHeld || distance > reach + 0.5f)
+            if (door == null || !door.isActiveAndEnabled || !door.IsHeld)
+            {
+                Release(true);
+                return;
+            }
+
+            Vector3 heldPoint = door.transform.TransformPoint(heldLocalPoint);
+            if (DistanceToObject(heldPoint) > reach + 0.5f)
             {
                 Release(true);
                 return;
@@ -110,9 +134,21 @@ namespace Leftovers
 
             Vector2 movement = pointer - lastPointer;
             lastPointer = pointer;
+
             float drag = Vector2.Dot(movement, DragAxis);
             float degrees = drag * degreesPerScreenHeight / Mathf.Max(1, Screen.height);
             door.DragBy(degrees);
+        }
+
+        float DistanceToObject(Vector3 point)
+        {
+            Vector3 origin = interactionCamera.transform.position;
+            if (interactionOrigin != null)
+            {
+                origin = interactionOrigin.position;
+            }
+
+            return Vector3.Distance(origin, point);
         }
 
         void Release(bool cancelMomentum)
@@ -123,8 +159,6 @@ namespace Leftovers
                 {
                     Held.Door.EndHold(cancelMomentum);
                 }
-
-                Cursor.lockState = previousCursorMode;
             }
 
             Held = null;
