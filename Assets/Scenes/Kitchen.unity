@@ -5036,6 +5036,7 @@ MonoBehaviour:
   cameraPivot: {fileID: 2140000001}
   edgeThreshold: 0.08
   edgeLookSpeed: 60
+  horizontalLookSpeed: 80
   defaultPitch: 12
   minPitch: -6
   maxPitch: 25

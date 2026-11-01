@@ -4,6 +4,8 @@ namespace Leftovers
 {
     public class KitchenHud : MonoBehaviour
     {
+        [SerializeField] string requestedProductName = "cheese";
+
         CameraFollow viewController;
         MouseDoorInteractor doorInteractor;
         MouseCabinetInteractor cabinetInteractor;
@@ -17,6 +19,8 @@ namespace Leftovers
         GUIStyle titleStyle;
         GUIStyle productNameStyle;
         GUIStyle productControlStyle;
+        GUIStyle requestStyle;
+        bool requestActive = true;
 
         Color highlightColor = new Color(1f, 0.8f, 0.35f, 1f);
         Color productHighlightColor = new Color(1f, 0.72f, 0.2f, 1f);
@@ -169,10 +173,20 @@ namespace Leftovers
 
         void OnGUI()
         {
+            CreateStyles();
+
             if (viewController != null && viewController.IsPaused)
             {
-                CreateStyles();
                 DrawPauseMenu();
+            }
+
+            if (requestActive)
+            {
+                DrawProductRequest();
+            }
+
+            if (viewController != null && viewController.IsPaused)
+            {
                 return;
             }
 
@@ -181,7 +195,6 @@ namespace Leftovers
                 return;
             }
 
-            CreateStyles();
             if (productInteractor.HeldProduct != null)
             {
                 string heldControl = productInteractor.CanPlaceHeldProduct
@@ -213,6 +226,10 @@ namespace Leftovers
             productNameStyle.normal.textColor = Color.white;
             productControlStyle = new GUIStyle(labelStyle);
             productControlStyle.fontSize = 20;
+            requestStyle = new GUIStyle(labelStyle);
+            requestStyle.alignment = TextAnchor.MiddleLeft;
+            requestStyle.fontSize = 20;
+            requestStyle.wordWrap = true;
         }
 
         void DrawProductPrompt(string productName, string controlText)
@@ -230,6 +247,32 @@ namespace Leftovers
 
             GUI.Label(new Rect(left, top + 8f, width, 44f), productName, productNameStyle);
             GUI.Label(new Rect(left, top + 57f, width, 32f), controlText, productControlStyle);
+        }
+
+        void DrawProductRequest()
+        {
+            string requestText = "Find the " + requestedProductName;
+            float width = Mathf.Min(360f, Screen.width - 32f);
+            float textHeight = requestStyle.CalcHeight(new GUIContent(requestText), width - 24f);
+            float height = Mathf.Max(52f, textHeight + 24f);
+
+            Rect panel = new Rect(16f, 16f, width, height);
+            Color backgroundColor = new Color32(0, 0, 0, 80);
+            GUI.DrawTexture(panel, Texture2D.whiteTexture, ScaleMode.StretchToFill,
+                true, 0f, backgroundColor, 0f, 20f);
+            GUI.Label(new Rect(28f, 28f, width - 24f, height - 24f), requestText, requestStyle);
+        }
+
+        [ContextMenu("Complete Request")]
+        public void CompleteRequest()
+        {
+            requestActive = false;
+        }
+
+        [ContextMenu("Fail Request")]
+        public void FailRequest()
+        {
+            requestActive = false;
         }
 
         void DrawPauseMenu()
