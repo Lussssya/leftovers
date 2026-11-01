@@ -1,0 +1,10 @@
+Dim room and microwave sound pass
+
+Open Assets/Scenes/Microwave Fridge Flow.unity and press Play.
+The room now has warm plaster walls, dark slate flooring, skirting, and a wall lamp. Existing directional lights and ambient light were reduced and warmed. Camera background is warm dark gray.
+
+Open and close the microwave slowly, then slam it. Compare the firmer close latch with the deeper slam. Drag slowly to hear the quiet hinge friction loop. Insert food and close to check that closing precedes the start beep.
+
+Only the dedicated flow scene and four microwave WAV files changed at runtime. Door sensitivity, slam thresholds, fridge audio, cooking hum, and beep timing remain unchanged.
+
+Validation: Unity 2022.3.62f3 compiled, imported the replacement audio, saved the scene, and rendered dim-room-preview.png in an isolated project copy with exit code 0. New clips are mono 48 kHz PCM with fades and peaks below full scale. In-game listening remains a manual check.

@@ -1,0 +1,29 @@
+PASS Timer is a genuinely flat surface
+PASS Flat red countdown selects correct digits
+PASS Door opens freely: UpperDoor
+PASS Door opens freely: LowerDoor
+PASS Door opens freely: Microwave door
+PASS Sandwich starts inside fridge on screen right
+PASS Food can be picked through open fridge
+PASS Food leaves fridge through open door
+PASS Food can be placed through open microwave
+PASS Loaded door fully closes
+PASS Close sound gets time before start beep
+PASS Delayed start beeps and cooks
+PASS Cooking completes with beep and light
+PASS Steam uses low poly mesh puffs
+PASS Cooked food removable
+PASS Empty microwave closes
+PASS Held plate cannot pass through closed microwave door
+PASS Door stops against plate and sandwich
+PASS Door closes freely: UpperDoor
+PASS Door stops against scene objects: UpperDoor
+PASS Door resumes when obstacle removed: UpperDoor
+PASS Door closes freely: LowerDoor
+PASS Door stops against scene objects: LowerDoor
+PASS Door resumes when obstacle removed: LowerDoor
+PASS Door closes freely: Microwave door
+PASS Door stops against scene objects: Microwave door
+PASS Door resumes when obstacle removed: Microwave door
+PASS Dropped plate lands on floor
+DOOR_CORRECTIONS_PASSED

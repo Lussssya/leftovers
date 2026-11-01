@@ -5,6 +5,7 @@ namespace Leftovers
     public class MouseCabinetInteractor : MonoBehaviour
     {
         public Camera interactionCamera;
+        public bool useCenterAim;
         public float reach = 5.5f;
         public Transform interactionOrigin;
         public CabinetPart Hovered { get; private set; }
@@ -13,6 +14,8 @@ namespace Leftovers
         CabinetPart heldPart;
         Vector2 dragAxis;
         Vector2 lastPointer;
+        CursorLockMode previousCursorMode;
+        bool previousCursorVisible;
         Vector3 heldLocalPoint;
 
         void Awake()
@@ -45,6 +48,8 @@ namespace Leftovers
             }
 
             Vector2 pointer = Input.mousePosition;
+            if (useCenterAim) pointer = interactionCamera.pixelRect.center;
+
             FindPart(pointer);
         }
 
@@ -109,6 +114,9 @@ namespace Leftovers
                 dragAxis = Vector2.right;
             }
 
+            previousCursorMode = Cursor.lockState;
+            previousCursorVisible = Cursor.visible;
+            if (!useCenterAim) { Cursor.lockState = CursorLockMode.Confined; Cursor.visible = true; }
             part.BeginHold();
         }
 
@@ -129,8 +137,14 @@ namespace Leftovers
             }
 
             Vector2 pointer = Input.mousePosition;
+            if (useCenterAim) pointer = interactionCamera.pixelRect.center;
+
             Vector2 movement = pointer - lastPointer;
             lastPointer = pointer;
+            if (useCenterAim)
+            {
+                movement = new Vector2(Input.GetAxisRaw("Mouse X"), Input.GetAxisRaw("Mouse Y")) * 10f;
+            }
 
             float drag = Vector2.Dot(movement, dragAxis);
             float amount = drag * heldPart.maximumOpen * 1.5f / Mathf.Max(1, Screen.height);
@@ -161,6 +175,14 @@ namespace Leftovers
 
             heldPart.EndHold(cancelMomentum);
             heldPart = null;
+            Cursor.lockState = previousCursorMode;
+            Cursor.visible = previousCursorVisible;
+
+            if (!Application.isFocused || !isActiveAndEnabled || !Application.isPlaying || Time.timeScale == 0f)
+            {
+                Cursor.lockState = CursorLockMode.None;
+                Cursor.visible = true;
+            }
         }
 
         void OnDisable()
