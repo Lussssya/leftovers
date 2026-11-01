@@ -105,6 +105,11 @@ namespace Leftovers
             }
         }
 
+        public void HoldAtAngle(float angle)
+        {
+            if (IsHeld) targetAngle = Mathf.Clamp(angle,0f,maximumAngle);
+        }
+
         public void EndHold(bool cancelMomentum = false)
         {
             IsHeld = false;

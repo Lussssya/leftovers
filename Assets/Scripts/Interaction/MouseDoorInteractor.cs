@@ -5,6 +5,7 @@ namespace Leftovers
     public class MouseDoorInteractor : MonoBehaviour
     {
         public Camera interactionCamera;
+        public bool useCenterAim;
         public float reach = 4.5f;
         public Transform interactionOrigin;
         public float degreesPerScreenHeight = 210f;
@@ -40,6 +41,8 @@ namespace Leftovers
             }
 
             Vector2 pointer = Input.mousePosition;
+            if (useCenterAim) pointer = interactionCamera.pixelRect.center;
+
             if (Held != null)
             {
                 DragHandle(pointer);
@@ -134,6 +137,10 @@ namespace Leftovers
 
             Vector2 movement = pointer - lastPointer;
             lastPointer = pointer;
+            if (useCenterAim)
+            {
+                movement = new Vector2(Input.GetAxisRaw("Mouse X"), Input.GetAxisRaw("Mouse Y")) * 10f;
+            }
 
             float drag = Vector2.Dot(movement, DragAxis);
             float degrees = drag * degreesPerScreenHeight / Mathf.Max(1, Screen.height);

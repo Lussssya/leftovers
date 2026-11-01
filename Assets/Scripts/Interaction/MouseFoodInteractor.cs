@@ -5,6 +5,15 @@ namespace Leftovers
     public class MouseFoodInteractor : MonoBehaviour
     {
         public Camera interactionCamera;
+        public bool useCenterAim;
+        Vector3 Pointer
+        {
+            get
+            {
+                if (useCenterAim) return interactionCamera.pixelRect.center;
+                return Input.mousePosition;
+            }
+        }
         public MouseDoorInteractor doorInteractor;
         public Microwave microwave;
         public Transform foodRest;
@@ -36,7 +45,7 @@ namespace Leftovers
             }
 
             Physics.SyncTransforms();
-            Ray ray = interactionCamera.ScreenPointToRay(Input.mousePosition);
+            Ray ray = interactionCamera.ScreenPointToRay(Pointer);
             RaycastHit hit;
             if (!Physics.Raycast(ray, out hit, reach, ~0, QueryTriggerInteraction.Collide))
             {
@@ -60,7 +69,7 @@ namespace Leftovers
 
         void MoveFood()
         {
-            Ray ray = interactionCamera.ScreenPointToRay(Input.mousePosition);
+            Ray ray = interactionCamera.ScreenPointToRay(Pointer);
             Plane plane = new Plane(Vector3.up, microwave.turntable.position);
             float distance;
             if (plane.Raycast(ray, out distance))
@@ -79,7 +88,7 @@ namespace Leftovers
             bool overTray = false;
             if (place)
             {
-                Ray ray = interactionCamera.ScreenPointToRay(Input.mousePosition);
+                Ray ray = interactionCamera.ScreenPointToRay(Pointer);
                 RaycastHit hit;
                 if (Physics.Raycast(ray, out hit, reach, ~0, QueryTriggerInteraction.Collide))
                 {

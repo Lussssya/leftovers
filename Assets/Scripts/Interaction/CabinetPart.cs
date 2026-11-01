@@ -10,6 +10,15 @@ namespace Leftovers
         public float moveSpeed = 360f;
         public FridgeDoor hingedDoor;
 
+        public float OpenAmount
+        {
+            get
+            {
+                if (hingedDoor != null) return hingedDoor.Angle;
+                return currentOpen;
+            }
+        }
+
         public bool IsHeld
         {
             get
@@ -72,6 +81,12 @@ namespace Leftovers
             {
                 targetOpen = Mathf.Clamp(targetOpen + amount, 0f, maximumOpen);
             }
+        }
+
+        public void HoldAtOpen(float amount)
+        {
+            if (hingedDoor != null) { hingedDoor.HoldAtAngle(amount); return; }
+            if (IsHeld) targetOpen = Mathf.Clamp(amount,0f,maximumOpen);
         }
 
         public void EndHold(bool cancelMomentum = false)
