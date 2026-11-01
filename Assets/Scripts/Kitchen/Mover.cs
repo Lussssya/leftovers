@@ -5,12 +5,14 @@ namespace Leftovers
     public class Mover : MonoBehaviour
     {
         [SerializeField] float moveSpeed = 3f;
+        [SerializeField] float sprintMultiplier = 1.5f;
         [SerializeField] float collisionSkin = 0.02f;
         [SerializeField] Transform movementCamera;
 
         Rigidbody playerRigidbody;
         Vector3 moveDirection;
         CameraFollow viewController;
+        bool isSprinting;
 
         void Awake()
         {
@@ -26,8 +28,11 @@ namespace Leftovers
             if (Time.timeScale == 0f || (viewController != null && viewController.IsDragging))
             {
                 moveDirection = Vector3.zero;
+                isSprinting = false;
                 return;
             }
+
+            isSprinting = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
 
             float horizontalInput = 0f;
             float verticalInput = 0f;
@@ -65,7 +70,13 @@ namespace Leftovers
                 return;
             }
 
-            Vector3 movement = moveDirection * moveSpeed * Time.fixedDeltaTime;
+            float currentSpeed = moveSpeed;
+            if (isSprinting)
+            {
+                currentSpeed = currentSpeed * sprintMultiplier;
+            }
+
+            Vector3 movement = moveDirection * currentSpeed * Time.fixedDeltaTime;
             movement = GetCollisionSafeMovement(movement);
             playerRigidbody.MovePosition(playerRigidbody.position + movement);
         }
