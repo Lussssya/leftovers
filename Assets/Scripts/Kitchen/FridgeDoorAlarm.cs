@@ -15,6 +15,14 @@ namespace Leftovers
         float timeUntilNextBeep;
         bool warningActive;
 
+        public bool IsWarningActive
+        {
+            get
+            {
+                return warningActive && isActiveAndEnabled && IsDoorOpen();
+            }
+        }
+
         void Update()
         {
             UpdateAlarm(Time.deltaTime);

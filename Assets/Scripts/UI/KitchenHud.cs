@@ -5,11 +5,13 @@ namespace Leftovers
     public class KitchenHud : MonoBehaviour
     {
         [SerializeField] string requestedProductName = "cheese";
+        [SerializeField] float fridgeWarningShakeAmount = 5f;
 
         CameraFollow viewController;
         MouseDoorInteractor doorInteractor;
         MouseCabinetInteractor cabinetInteractor;
         ProductInteractor productInteractor;
+        FridgeDoorAlarm[] fridgeAlarms;
         ProductInteractable highlightedProduct;
         Renderer highlightedHandle;
         Renderer[] highlightedRenderers;
@@ -20,7 +22,9 @@ namespace Leftovers
         GUIStyle productNameStyle;
         GUIStyle productControlStyle;
         GUIStyle requestStyle;
+        GUIStyle fridgeWarningStyle;
         bool requestActive = true;
+        float fridgeWarningTime;
 
         Color highlightColor = new Color(1f, 0.8f, 0.35f, 1f);
         Color productHighlightColor = new Color(1f, 0.72f, 0.2f, 1f);
@@ -31,10 +35,13 @@ namespace Leftovers
             doorInteractor = GetComponent<MouseDoorInteractor>();
             cabinetInteractor = GetComponent<MouseCabinetInteractor>();
             productInteractor = GetComponent<ProductInteractor>();
+            fridgeAlarms = FindObjectsOfType<FridgeDoorAlarm>();
         }
 
         void LateUpdate()
         {
+            UpdateFridgeWarningTime();
+
             ProductInteractable nextProduct = null;
             Renderer nextHandle = null;
             if (viewController != null && !viewController.IsPaused)
@@ -185,6 +192,11 @@ namespace Leftovers
                 DrawProductRequest();
             }
 
+            if (HasFridgeWarning())
+            {
+                DrawFridgeWarning();
+            }
+
             if (viewController != null && viewController.IsPaused)
             {
                 return;
@@ -230,6 +242,63 @@ namespace Leftovers
             requestStyle.alignment = TextAnchor.MiddleLeft;
             requestStyle.fontSize = 20;
             requestStyle.wordWrap = true;
+            fridgeWarningStyle = new GUIStyle(requestStyle);
+            fridgeWarningStyle.alignment = TextAnchor.MiddleCenter;
+            fridgeWarningStyle.normal.textColor = new Color(1f, 0.35f, 0.35f, 1f);
+        }
+
+        void UpdateFridgeWarningTime()
+        {
+            if (!HasFridgeWarning())
+            {
+                fridgeWarningTime = 0f;
+                return;
+            }
+
+            fridgeWarningTime = fridgeWarningTime + Time.deltaTime;
+        }
+
+        float GetFridgeWarningShake()
+        {
+            float shakeTime = fridgeWarningTime % 3f;
+            if (Time.timeScale == 0f || shakeTime >= 0.45f)
+            {
+                return 0f;
+            }
+
+            float strength = 1f - shakeTime / 0.45f;
+            float movement = Mathf.Sin(shakeTime * Mathf.PI * 18f);
+            return movement * Mathf.Max(0f, fridgeWarningShakeAmount) * strength;
+        }
+
+        bool HasFridgeWarning()
+        {
+            foreach (FridgeDoorAlarm alarm in fridgeAlarms)
+            {
+                if (alarm != null && alarm.IsWarningActive)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        void DrawFridgeWarning()
+        {
+            string warningText = "Fridge left open. Close the door!";
+            float width = Mathf.Min(420f, Screen.width - 32f);
+            float textHeight = fridgeWarningStyle.CalcHeight(new GUIContent(warningText), width - 32f);
+            float height = Mathf.Max(52f, textHeight + 24f);
+            float left = (Screen.width - width) * 0.5f;
+            float top = Screen.height - height - 16f;
+
+            Rect panel = new Rect(left, top, width, height);
+            Color backgroundColor = new Color(0f, 0f, 0f, 0.7f);
+            GUI.DrawTexture(panel, Texture2D.whiteTexture, ScaleMode.StretchToFill,
+                true, 0f, backgroundColor, 0f, 20f);
+            float textLeft = left + 16f + GetFridgeWarningShake();
+            GUI.Label(new Rect(textLeft, top + 12f, width - 32f, height - 24f), warningText, fridgeWarningStyle);
         }
 
         void DrawProductPrompt(string productName, string controlText)
