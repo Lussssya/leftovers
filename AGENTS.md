@@ -11,4 +11,4 @@ existing folder structure. After each major change, explain what changed and
 how to test it in Unity. Do not change packages, input systems, or render
 pipelines unless the task requires it.
 
-Never reset user-tuned Inspector values, camera FOV, audio, movement, or effects settings. Preserve the currently saved scene and live unsaved edits. Make targeted changes; never replace an entire scene from a scratch project or rerun setup tools over a tuned scene. Change a tuned value only when the user explicitly requests that value be changed.
+Never reset user-tuned Inspector values, camera FOV, audio, movement, or effects settings. Preserve the currently saved scene and live unsaved edits. Make targeted changes; never replace an entire scene from a scratch project or rerun setup tools over a tuned scene.
