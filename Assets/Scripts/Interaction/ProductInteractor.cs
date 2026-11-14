@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 namespace Leftovers
 {
@@ -7,7 +8,15 @@ namespace Leftovers
         [SerializeField] Camera interactionCamera;
         [SerializeField] Transform interactionOrigin;
         [SerializeField] Transform holdPoint;
+        KitchenHud kitchenHud;
+        // Invisible inventory for collected ingredients
+        private readonly List<ProductInteractable> basket =
+            new List<ProductInteractable>();
+
+        public int BasketCount => basket.Count;
+        public IReadOnlyList<ProductInteractable> BasketItems => basket;
         [SerializeField] AssemblyTable assemblyTable;
+        [SerializeField] SandwichAssembly sandwichAssembly;
         [SerializeField] float dropDistance = 1.5f;
         [SerializeField] float dropSurfaceOffset = 0.3f;
         [SerializeField] float dropRayHeight = 1.5f;
@@ -36,13 +45,24 @@ namespace Leftovers
 
         float lastTargetedTime;
 
+       
         void Awake()
         {
             if (interactionCamera == null)
             {
                 interactionCamera = GetComponent<Camera>();
             }
+
+            kitchenHud = GetComponent<KitchenHud>();
+
+            if (kitchenHud == null)
+            {
+                Debug.LogWarning(
+                    "KitchenHud not found on ProductInteractor object."
+                );
+            }
         }
+
 
         void Update()
         {
@@ -51,7 +71,21 @@ namespace Leftovers
                 ClearTarget();
                 return;
             }
+            
+            if (Input.GetKeyDown(KeyCode.E) &&
+                kitchenHud != null &&
+                kitchenHud.RoundCompleted &&
+                sandwichAssembly != null &&
+                sandwichAssembly.IsInRange(GetInteractionOriginPosition()))
+            {
+                if (sandwichAssembly.TryPlaceNext(BasketItems))
+                {
+                    ClearTarget();
+                    return;
+                }
+            }
 
+            
             if (HeldProduct != null)
             {
                 ClearTarget();
@@ -97,17 +131,81 @@ namespace Leftovers
             return true;
         }
 
+        
+        
         void PickUpTargetedProduct()
         {
-            if (HeldProduct != null || TargetedProduct == null || holdPoint == null)
+            if (HeldProduct != null || TargetedProduct == null)
             {
                 return;
             }
 
-            HeldProduct = TargetedProduct;
+            ProductInteractable selectedProduct = TargetedProduct;
+
+            // Kitchen ingredient collection system
+            if (kitchenHud != null)
+            {
+                // Do not collect extra ingredients after the
+                // request sequence has finished.
+                if (kitchenHud.RoundCompleted)
+                {
+                    return;
+                }
+
+                // Check whether this ingredient matches the request.
+                bool accepted =
+                    kitchenHud.TryAcceptProduct(selectedProduct);
+
+                if (!accepted)
+                {
+                    // Wrong ingredient: leave it in its original position.
+                    return;
+                }
+
+                // Correct ingredient: save it in the basket.
+                StoreInBasket(selectedProduct);
+                return;
+            }
+
+            // Preserve normal pickup behavior in other scenes
+            // that do not use the KitchenHud request system.
+            if (holdPoint == null)
+            {
+                return;
+            }
+
+            HeldProduct = selectedProduct;
             ClearTarget();
             HeldProduct.PickUp(holdPoint);
         }
+        
+        void StoreInBasket(ProductInteractable ingredient)
+        {
+            if (ingredient == null || basket.Contains(ingredient))
+            {
+                return;
+            }
+
+            // Remember the collected ingredient.
+            basket.Add(ingredient);
+
+            // Clear the current target.
+            ClearTarget();
+
+            // Hide the ingredient from the kitchen.
+            // Do not destroy it: we need it for assembly later.
+            ingredient.gameObject.SetActive(false);
+
+            Debug.Log(
+                "Added to basket: " + ingredient.DisplayName
+            );
+
+            Debug.Log(
+                "Basket contains " + basket.Count + " ingredients."
+            );
+        }
+
+
 
         void DropHeldProduct()
         {
