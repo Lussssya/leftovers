@@ -1,11 +1,27 @@
 using UnityEngine;
 
+
 namespace Leftovers
 {
     public class KitchenHud : MonoBehaviour
     {
-        [SerializeField] string requestedProductName = "cheese";
+        [Header("Product Request Sequence")]
+        [SerializeField] string[] requestedProducts =
+        {
+            "Cheese",
+            "Ketchup"
+        };
+
+        int currentRequestIndex = 0;
         [SerializeField] float fridgeWarningShakeAmount = 5f;
+        [Header("Product Request Feedback")]
+        [SerializeField] float feedbackDuration = 2.5f;
+        [SerializeField] TodoListUI todoListUI;
+
+        string feedbackMessage = "";
+        float feedbackUntil;
+
+        public bool RoundCompleted { get; private set; }
 
         CameraFollow viewController;
         MouseDoorInteractor doorInteractor;
@@ -186,10 +202,15 @@ namespace Leftovers
             {
                 DrawPauseMenu();
             }
-
             if (requestActive)
             {
                 DrawProductRequest();
+            }
+
+            if (Time.time < feedbackUntil &&
+                !string.IsNullOrEmpty(feedbackMessage))
+            {
+                DrawRequestFeedback();
             }
 
             if (HasFridgeWarning())
@@ -317,32 +338,266 @@ namespace Leftovers
             GUI.Label(new Rect(left, top + 8f, width, 44f), productName, productNameStyle);
             GUI.Label(new Rect(left, top + 57f, width, 32f), controlText, productControlStyle);
         }
-
-        void DrawProductRequest()
-        {
-            string requestText = "Find the " + requestedProductName;
-            float width = Mathf.Min(360f, Screen.width - 32f);
-            float textHeight = requestStyle.CalcHeight(new GUIContent(requestText), width - 24f);
-            float height = Mathf.Max(52f, textHeight + 24f);
-
-            Rect panel = new Rect(16f, 16f, width, height);
-            Color backgroundColor = new Color32(0, 0, 0, 80);
-            GUI.DrawTexture(panel, Texture2D.whiteTexture, ScaleMode.StretchToFill,
-                true, 0f, backgroundColor, 0f, 20f);
-            GUI.Label(new Rect(28f, 28f, width - 24f, height - 24f), requestText, requestStyle);
-        }
+        
 
         [ContextMenu("Complete Request")]
         public void CompleteRequest()
         {
             requestActive = false;
+            RoundCompleted = true;
+
+            if (todoListUI != null)
+            {
+                todoListUI.CompleteTask(2);
+            }
+        }
+        
+        
+        public bool TryAcceptProduct(ProductInteractable product)
+        {
+            if (product == null)
+            {
+                return false;
+            }
+
+            // Once every request is finished, allow normal pickup.
+            if (!requestActive)
+            {
+                return true;
+            }
+
+            if (requestedProducts == null ||
+                currentRequestIndex >= requestedProducts.Length)
+            {
+                return false;
+            }
+
+            string requestedName =
+                (requestedProducts[currentRequestIndex] ?? "").Trim();
+
+            string selectedName = product.DisplayName.Trim();
+
+            bool isCorrect = string.Equals(
+                selectedName,
+                requestedName,
+                System.StringComparison.OrdinalIgnoreCase
+            );
+
+            // WRONG PRODUCT
+            if (!isCorrect)
+            {
+                ShowFeedback(
+                    "Wrong product! Find the " + requestedName + "."
+                );
+
+                Debug.Log("Wrong product: " + selectedName);
+
+                return false;
+            }
+
+            // CORRECT PRODUCT
+            Debug.Log("Correct product: " + selectedName);
+
+            currentRequestIndex++;
+
+            // MORE REQUESTS REMAIN
+            if (currentRequestIndex < requestedProducts.Length)
+            {
+                string nextProduct =
+                    requestedProducts[currentRequestIndex];
+
+                ShowFeedback(
+                    "Correct! Next: " + nextProduct + "."
+                );
+
+                Debug.Log("Next requested product: " + nextProduct);
+            }
+            else
+            {
+                CompleteRequest();
+
+                ShowFeedback(
+                    "All ingredients collected! Go to the assembly table."
+                );
+
+                Debug.Log(
+                    "Collection complete! Ready for sandwich assembly."
+                );
+            }
+
+            return true;
         }
 
+
+        void ShowFeedback(string message)
+        {
+            feedbackMessage = message;
+            feedbackUntil = Time.time + feedbackDuration;
+        }
+        
         [ContextMenu("Fail Request")]
         public void FailRequest()
         {
             requestActive = false;
         }
+        
+        
+        
+        void DrawProductRequest()
+        {
+            if (requestedProducts == null ||
+                requestedProducts.Length == 0 ||
+                currentRequestIndex >= requestedProducts.Length)
+            {
+                return;
+            }
+
+            string productName = requestedProducts[currentRequestIndex];
+
+            float width = Mathf.Min(650f, Screen.width - 40f);
+            float height = 150f;
+
+            float x = Screen.width - width - 24f;
+            float y = 24f;
+
+            Rect panel = new Rect(x, y, width, height);
+
+            // Dark background
+            GUI.DrawTexture(
+                panel,
+                Texture2D.whiteTexture,
+                ScaleMode.StretchToFill,
+                true,
+                0f,
+                new Color32(35, 40, 49, 245),
+                0f,
+                18f
+            );
+
+            // Golden accent on the left
+            GUI.DrawTexture(
+                new Rect(x, y + 15f, 7f, height - 30f),
+                Texture2D.whiteTexture,
+                ScaleMode.StretchToFill,
+                true,
+                0f,
+                new Color32(235, 177, 95, 255),
+                0f,
+                3f
+            );
+
+            GUIStyle headerStyle = new GUIStyle(GUI.skin.label);
+            headerStyle.fontSize = 28;
+            headerStyle.fontStyle = FontStyle.Bold;
+            headerStyle.normal.textColor = new Color32(235, 190, 120, 255);
+
+            GUIStyle productStyle = new GUIStyle(GUI.skin.label);
+            productStyle.fontSize = 45;
+            productStyle.fontStyle = FontStyle.Bold;
+            productStyle.normal.textColor = Color.white;
+
+            GUIStyle hintStyle = new GUIStyle(GUI.skin.label);
+            hintStyle.fontSize = 23;
+            hintStyle.normal.textColor = new Color32(205, 210, 220, 255);
+
+            GUI.Label(
+                new Rect(x + 25f, y + 12f, width - 45f, 35f),
+                $"REQUEST {currentRequestIndex + 1} / {requestedProducts.Length}",
+                headerStyle
+            );
+
+            GUI.Label(
+                new Rect(x + 25f, y + 48f, width - 45f, 58f),
+                "Find the " + productName,
+                productStyle
+            );
+
+            GUI.Label(
+                new Rect(x + 25f, y + 110f, width - 45f, 30f),
+                "Pick up the correct ingredient",
+                hintStyle
+            );
+        }
+
+        
+        
+        void DrawRequestFeedback()
+        {
+            if (string.IsNullOrEmpty(feedbackMessage))
+                return;
+
+            bool isWrong = feedbackMessage.IndexOf(
+                "wrong",
+                System.StringComparison.OrdinalIgnoreCase
+            ) >= 0;
+
+            bool isComplete = feedbackMessage.IndexOf(
+                "all ingredients",
+                System.StringComparison.OrdinalIgnoreCase
+            ) >= 0;
+
+            string title;
+
+            if (isWrong)
+                title = "WRONG INGREDIENT!";
+            else if (isComplete)
+                title = "COLLECTION COMPLETE!";
+            else
+                title = "CORRECT INGREDIENT!";
+
+            Color background = isWrong
+                ? new Color32(98, 40, 45, 245)
+                : new Color32(39, 91, 64, 245);
+
+            Color accent = isWrong
+                ? new Color32(255, 185, 185, 255)
+                : new Color32(170, 240, 190, 255);
+
+            float width = Mathf.Min(850f, Screen.width - 40f);
+            float height = 145f;
+
+            float x = (Screen.width - width) / 2f;
+            float y = Screen.height - height - 75f;
+
+            Rect panel = new Rect(x, y, width, height);
+
+            GUI.DrawTexture(
+                panel,
+                Texture2D.whiteTexture,
+                ScaleMode.StretchToFill,
+                true,
+                0f,
+                background,
+                0f,
+                18f
+            );
+
+            GUIStyle titleStyle = new GUIStyle(GUI.skin.label);
+            titleStyle.alignment = TextAnchor.MiddleCenter;
+            titleStyle.fontSize = 32;
+            titleStyle.fontStyle = FontStyle.Bold;
+            titleStyle.normal.textColor = accent;
+
+            GUIStyle messageStyle = new GUIStyle(GUI.skin.label);
+            messageStyle.alignment = TextAnchor.MiddleCenter;
+            messageStyle.fontSize = 34;
+            messageStyle.fontStyle = FontStyle.Bold;
+            messageStyle.wordWrap = true;
+            messageStyle.normal.textColor = Color.white;
+
+            GUI.Label(
+                new Rect(x + 15f, y + 12f, width - 30f, 45f),
+                title,
+                titleStyle
+            );
+
+            GUI.Label(
+                new Rect(x + 25f, y + 60f, width - 50f, 75f),
+                feedbackMessage,
+                messageStyle
+            );
+        }
+
 
         void DrawPauseMenu()
         {
