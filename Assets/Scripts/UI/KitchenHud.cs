@@ -75,7 +75,9 @@ namespace Leftovers
 
             ProductInteractable nextProduct = null;
             Renderer nextHandle = null;
-            if (viewController != null && !viewController.IsPaused)
+            bool gameplayActive = Time.timeScale > 0f &&
+                (viewController == null || !viewController.IsPaused);
+            if (gameplayActive)
             {
                 if (productInteractor != null)
                 {
@@ -254,6 +256,60 @@ namespace Leftovers
             {
                 DrawProductPrompt(productInteractor.TargetedProduct.DisplayName, "[E] Pick up");
             }
+            else
+            {
+                DrawMouseInteractionPrompt();
+            }
+        }
+
+        void DrawMouseInteractionPrompt()
+        {
+            if (doorInteractor != null && doorInteractor.isActiveAndEnabled)
+            {
+                FridgeDoorHandle handle = doorInteractor.Held;
+                if (handle == null)
+                {
+                    handle = doorInteractor.Hovered;
+                }
+
+                if (handle != null && handle.Door != null)
+                {
+                    DrawProductPrompt(
+                        GetDoorName(handle.Door),
+                        "[Hold LMB] Drag");
+                    return;
+                }
+            }
+
+            if (cabinetInteractor != null && cabinetInteractor.isActiveAndEnabled)
+            {
+                CabinetPart part = cabinetInteractor.Held;
+                if (part == null)
+                {
+                    part = cabinetInteractor.Hovered;
+                }
+
+                if (part != null)
+                {
+                    string partName = part.slidesOut ? "Drawer" : "Cabinet";
+                    DrawProductPrompt(partName, "[Hold LMB] Drag");
+                }
+            }
+        }
+
+        string GetDoorName(FridgeDoor door)
+        {
+            if (door.GetComponentInParent<Microwave>() != null)
+            {
+                return "Microwave";
+            }
+
+            if (door.transform.root.name.Contains("Fridge"))
+            {
+                return "Fridge";
+            }
+
+            return "Door";
         }
 
         void CreateStyles()

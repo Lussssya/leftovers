@@ -11,6 +11,11 @@ namespace Leftovers
         [SerializeField] AssemblyTable assemblyTable;
         [SerializeField] SandwichAssembly sandwichAssembly;
         [SerializeField] bool handleInputDirectly = true;
+        [SerializeField] AudioSource itemAudioSource;
+        [SerializeField] AudioClip pickupClip;
+        [SerializeField] AudioClip placeClip;
+        [SerializeField] AudioClip dropClip;
+        [SerializeField] [Range(0f, 1f)] float itemVolume = 0.25f;
         [SerializeField] float dropDistance = 1.5f;
         [SerializeField] float dropSurfaceOffset = 0.3f;
         [SerializeField] float dropRayHeight = 1.5f;
@@ -149,6 +154,7 @@ namespace Leftovers
                 kitchenHud.NotifyRequestedProductPlaced(product);
             }
 
+            PlayItemSound(placeClip);
             return true;
         }
 
@@ -176,6 +182,10 @@ namespace Leftovers
             HeldProduct = selectedProduct;
             ClearTarget();
             HeldProduct.PickUp(holdPoint);
+            if (HeldProduct.IsHeld)
+            {
+                PlayItemSound(pickupClip);
+            }
         }
 
         void DropHeldProduct()
@@ -189,8 +199,17 @@ namespace Leftovers
             float cameraYaw = interactionCamera.transform.eulerAngles.y;
             Quaternion dropRotation = Quaternion.Euler(0f, cameraYaw, 0f);
             HeldProduct.Drop(dropPosition, dropRotation);
+            PlayItemSound(dropClip);
             HeldProduct = null;
             ClearTarget();
+        }
+
+        void PlayItemSound(AudioClip clip)
+        {
+            if (itemAudioSource != null && clip != null)
+            {
+                itemAudioSource.PlayOneShot(clip, itemVolume);
+            }
         }
 
         Vector3 FindDropPosition()

@@ -53,6 +53,18 @@ namespace Leftovers
         public float AngularSpeed { get; private set; }
         public float LastClosingSpeed { get; private set; }
         public bool IsHeld { get; private set; }
+        public bool IsOpen
+        {
+            get
+            {
+                if (movingAutomatically)
+                {
+                    return targetAngle > maximumAngle * 0.5f;
+                }
+
+                return Angle > maximumAngle * 0.5f;
+            }
+        }
         public float MaximumAngle { get { return maximumAngle; } }
         public float SlamSpeed { get { return slamSpeed; } }
 
@@ -64,6 +76,7 @@ namespace Leftovers
         bool opened;
         bool closeArmed;
         bool initialized;
+        bool movingAutomatically;
 
         void Awake()
         {
@@ -92,6 +105,7 @@ namespace Leftovers
         {
             Initialize();
             IsHeld = true;
+            movingAutomatically = false;
             targetAngle = Angle;
             velocity = 0f;
             closingSpeed = 0f;
@@ -113,6 +127,7 @@ namespace Leftovers
         public void EndHold(bool cancelMomentum = false)
         {
             IsHeld = false;
+            movingAutomatically = false;
             targetAngle = Angle;
             closingSpeed = 0f;
             velocity = velocity * releaseMomentum;
@@ -121,6 +136,38 @@ namespace Leftovers
             {
                 velocity = 0f;
             }
+        }
+
+        public void Toggle()
+        {
+            if (IsOpen)
+            {
+                Close();
+            }
+            else
+            {
+                Open();
+            }
+        }
+
+        public void Open()
+        {
+            MoveToAngle(maximumAngle);
+        }
+
+        public void Close()
+        {
+            MoveToAngle(0f);
+        }
+
+        void MoveToAngle(float angle)
+        {
+            Initialize();
+            IsHeld = false;
+            movingAutomatically = true;
+            targetAngle = Mathf.Clamp(angle, 0f, maximumAngle);
+            velocity = 0f;
+            closingSpeed = 0f;
         }
 
         public Vector3 PointAtAngle(Vector3 localPoint, float angle)
@@ -167,13 +214,14 @@ namespace Leftovers
                 velocity = 0f;
                 closingSpeed = 0f;
                 targetAngle = Angle;
+                movingAutomatically = false;
                 return;
             }
 
             float previousAngle = Angle;
             float impactSpeed;
 
-            if (IsHeld)
+            if (IsHeld || movingAutomatically)
             {
                 impactSpeed = MoveHeldDoor(deltaTime);
             }
@@ -193,8 +241,18 @@ namespace Leftovers
                     velocity = 0f;
                     closingSpeed = 0f;
                     impactSpeed = 0f;
+                    movingAutomatically = false;
                 }
             }
+
+            if (movingAutomatically &&
+                Mathf.Abs(Angle - targetAngle) < 0.04f)
+            {
+                Angle = targetAngle;
+                movingAutomatically = false;
+                velocity = 0f;
+            }
+
             AngularSpeed = Mathf.Abs(Angle - previousAngle) / deltaTime;
             CheckOpening();
             CheckClosing(previousAngle, impactSpeed);

@@ -31,6 +31,10 @@ public class FirstPersonController : MonoBehaviour
     public bool enableHeadBob = true;
     public float bobSpeed = 8f;
     public Vector3 bobAmount = new Vector3(0f,.018f,0f);
+    [SerializeField] AudioSource footstepSource;
+    [SerializeField] AudioClip footstepClip;
+    [SerializeField] float stepDistance = 1.4f;
+    [SerializeField] [Range(0f, 1f)] float footstepVolume = 0.15f;
     public bool IsPaused { get; private set; }
 
     VisualElement aimDot;
@@ -52,6 +56,8 @@ public class FirstPersonController : MonoBehaviour
     bool sprinting;
     bool jumpRequested;
     bool skipLook = true;
+    Vector3 previousStepPosition;
+    float distanceSinceStep;
 
     void Awake()
     {
@@ -66,9 +72,24 @@ public class FirstPersonController : MonoBehaviour
         doors = playerCamera.GetComponent<MouseDoorInteractor>();
         cabinets = playerCamera.GetComponent<MouseCabinetInteractor>();
         food = playerCamera.GetComponent<MouseFoodInteractor>();
-        if (doors != null) doors.useCenterAim = true;
-        if (cabinets != null) cabinets.useCenterAim = true;
-        if (food != null) food.useCenterAim = true;
+        if (crosshair)
+        {
+            if (doors != null) doors.useCenterAim = true;
+            if (cabinets != null) cabinets.useCenterAim = true;
+            if (food != null) food.useCenterAim = true;
+            CreateCrosshair();
+        }
+
+        playerCamera.fieldOfView = fov;
+        pitch = playerCamera.transform.localEulerAngles.x;
+        if (pitch > 180f) pitch -= 360f;
+        rb.constraints = RigidbodyConstraints.FreezeRotation;
+        rb.interpolation = RigidbodyInterpolation.Interpolate;
+        previousStepPosition = transform.position;
+    }
+
+    void CreateCrosshair()
+    {
         GameObject overlay = new GameObject("Center crosshair");
         overlay.transform.SetParent(transform,false);
         UIDocument document = overlay.AddComponent<UIDocument>();
@@ -97,11 +118,6 @@ public class FirstPersonController : MonoBehaviour
         aimDot.style.borderBottomLeftRadius = 3;
         aimDot.style.borderBottomRightRadius = 3;
         root.Add(aimDot);
-        playerCamera.fieldOfView = fov;
-        pitch = playerCamera.transform.localEulerAngles.x;
-        if (pitch > 180f) pitch -= 360f;
-        rb.constraints = RigidbodyConstraints.FreezeRotation;
-        rb.interpolation = RigidbodyInterpolation.Interpolate;
     }
 
     void Start()
@@ -119,12 +135,13 @@ public class FirstPersonController : MonoBehaviour
         UnityEngine.Cursor.lockState = CursorLockMode.Locked;
         UnityEngine.Cursor.visible = false;
 
-        if (cameraCanMove && !skipLook)
+        if (cameraCanMove && !skipLook && !interacting)
         {
-            float vertical = Input.GetAxis("Mouse Y");
+            float vertical = Input.GetAxisRaw("Mouse Y");
             if (invertCamera) vertical = -vertical;
             pitch = Mathf.Clamp(pitch - vertical * mouseSensitivity, -maxLookAngle, maxLookAngle);
-            transform.Rotate(0f,Input.GetAxis("Mouse X") * mouseSensitivity,0f);
+            float horizontal = Input.GetAxisRaw("Mouse X");
+            transform.Rotate(0f, horizontal * mouseSensitivity, 0f);
             playerCamera.transform.localRotation = Quaternion.Euler(pitch,0f,0f);
         }
 
@@ -194,6 +211,7 @@ public class FirstPersonController : MonoBehaviour
 
     void LateUpdate()
     {
+        UpdateFootsteps();
         if (aimDot != null) aimDot.visible = crosshair && !IsPaused;
         if (IsPaused || Time.timeScale == 0f) return;
         Vector3 position = jointOriginalPos;
@@ -206,6 +224,31 @@ public class FirstPersonController : MonoBehaviour
         }
         else timer = 0f;
         joint.localPosition = Vector3.Lerp(joint.localPosition,position,1f-Mathf.Exp(-14f*Time.deltaTime));
+    }
+
+    void UpdateFootsteps()
+    {
+        Vector3 displacement = transform.position - previousStepPosition;
+        previousStepPosition = transform.position;
+        displacement.y = 0f;
+        RaycastHit ground;
+        if (IsPaused || Time.timeScale == 0f || interacting ||
+            movement.sqrMagnitude < 0.01f || displacement.magnitude > 1f ||
+            !rb.SweepTest(Vector3.down, out ground, 0.15f, QueryTriggerInteraction.Ignore))
+        {
+            distanceSinceStep = 0f;
+            return;
+        }
+
+        distanceSinceStep += displacement.magnitude;
+        if (distanceSinceStep >= Mathf.Max(0.2f, stepDistance))
+        {
+            distanceSinceStep = 0f;
+            if (footstepSource != null && footstepClip != null)
+            {
+                footstepSource.PlayOneShot(footstepClip, footstepVolume);
+            }
+        }
     }
 
     public void SetPaused(bool paused)
