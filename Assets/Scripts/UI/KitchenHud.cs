@@ -8,7 +8,9 @@ namespace Leftovers
         [Header("Product Request Sequence")]
         [SerializeField] string[] requestedProducts =
         {
+            "Toast",
             "Cheese",
+            "Tomato",
             "Ketchup"
         };
 
@@ -22,6 +24,19 @@ namespace Leftovers
         float feedbackUntil;
 
         public bool RoundCompleted { get; private set; }
+
+        public int RequestedProductCount
+        {
+            get
+            {
+                if (requestedProducts == null)
+                {
+                    return 0;
+                }
+
+                return requestedProducts.Length;
+            }
+        }
 
         CameraFollow viewController;
         MouseDoorInteractor doorInteractor;
@@ -349,65 +364,49 @@ namespace Leftovers
             if (todoListUI != null)
             {
                 todoListUI.CompleteTask(2);
+                todoListUI.CompleteTask(3);
             }
         }
-        
-        
-        public bool TryAcceptProduct(ProductInteractable product)
+
+        public bool CanPickRequestedProduct(ProductInteractable product)
         {
             if (product == null)
             {
                 return false;
             }
 
-            // Once every request is finished, allow normal pickup.
             if (!requestActive)
             {
                 return true;
             }
 
-            if (requestedProducts == null ||
-                currentRequestIndex >= requestedProducts.Length)
+            if (IsCurrentRequestedProduct(product))
+            {
+                return true;
+            }
+
+            string requestedName = GetRequestedProductName(currentRequestIndex);
+            ShowFeedback("Wrong product! Find the " + requestedName + ".");
+            Debug.Log("Wrong product: " + product.DisplayName);
+            return false;
+        }
+
+        public bool NotifyRequestedProductPlaced(ProductInteractable product)
+        {
+            if (!requestActive || !IsCurrentRequestedProduct(product))
             {
                 return false;
             }
 
-            string requestedName =
-                (requestedProducts[currentRequestIndex] ?? "").Trim();
-
-            string selectedName = product.DisplayName.Trim();
-
-            bool isCorrect = string.Equals(
-                selectedName,
-                requestedName,
-                System.StringComparison.OrdinalIgnoreCase
-            );
-
-            // WRONG PRODUCT
-            if (!isCorrect)
-            {
-                ShowFeedback(
-                    "Wrong product! Find the " + requestedName + "."
-                );
-
-                Debug.Log("Wrong product: " + selectedName);
-
-                return false;
-            }
-
-            // CORRECT PRODUCT
-            Debug.Log("Correct product: " + selectedName);
-
+            string deliveredName = GetRequestedProductName(currentRequestIndex);
             currentRequestIndex++;
 
-            // MORE REQUESTS REMAIN
-            if (currentRequestIndex < requestedProducts.Length)
+            if (currentRequestIndex < RequestedProductCount)
             {
-                string nextProduct =
-                    requestedProducts[currentRequestIndex];
+                string nextProduct = GetRequestedProductName(currentRequestIndex);
 
                 ShowFeedback(
-                    "Correct! Next: " + nextProduct + "."
+                    deliveredName + " delivered! Next: " + nextProduct + "."
                 );
 
                 Debug.Log("Next requested product: " + nextProduct);
@@ -417,15 +416,42 @@ namespace Leftovers
                 CompleteRequest();
 
                 ShowFeedback(
-                    "All ingredients collected! Go to the assembly table."
+                    "All ingredients delivered! Assemble the sandwich."
                 );
 
                 Debug.Log(
-                    "Collection complete! Ready for sandwich assembly."
+                    "Ingredient delivery complete! Ready for sandwich assembly."
                 );
             }
 
             return true;
+        }
+
+        public string GetRequestedProductName(int index)
+        {
+            if (requestedProducts == null || index < 0 ||
+                index >= requestedProducts.Length)
+            {
+                return "";
+            }
+
+            return (requestedProducts[index] ?? "").Trim();
+        }
+
+        bool IsCurrentRequestedProduct(ProductInteractable product)
+        {
+            if (product == null || currentRequestIndex < 0 ||
+                currentRequestIndex >= RequestedProductCount)
+            {
+                return false;
+            }
+
+            string requestedName = GetRequestedProductName(currentRequestIndex);
+            string selectedName = product.DisplayName.Trim();
+            return string.Equals(
+                selectedName,
+                requestedName,
+                System.StringComparison.OrdinalIgnoreCase);
         }
 
 
@@ -452,7 +478,7 @@ namespace Leftovers
                 return;
             }
 
-            string productName = requestedProducts[currentRequestIndex];
+            string productName = GetRequestedProductName(currentRequestIndex);
 
             float width = Mathf.Min(650f, Screen.width - 40f);
             float height = 150f;
@@ -512,9 +538,17 @@ namespace Leftovers
                 productStyle
             );
 
+            string requestHint = "Pick up the correct ingredient";
+            if (productInteractor != null &&
+                productInteractor.HeldProduct != null &&
+                IsCurrentRequestedProduct(productInteractor.HeldProduct))
+            {
+                requestHint = "Bring the " + productName + " to the Assembly Table";
+            }
+
             GUI.Label(
                 new Rect(x + 25f, y + 110f, width - 45f, 30f),
-                "Pick up the correct ingredient",
+                requestHint,
                 hintStyle
             );
         }

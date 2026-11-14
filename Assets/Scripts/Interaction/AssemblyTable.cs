@@ -60,6 +60,47 @@ namespace Leftovers
             }
         }
 
+        public ProductInteractable FindPlacedProductByName(string displayName)
+        {
+            EnsureOccupants();
+            for (int i = 0; i < occupants.Length; i++)
+            {
+                ProductInteractable product = occupants[i];
+                if (product != null && string.Equals(
+                    product.DisplayName.Trim(),
+                    displayName.Trim(),
+                    System.StringComparison.OrdinalIgnoreCase))
+                {
+                    return product;
+                }
+            }
+
+            return null;
+        }
+
+        public bool TryMoveToSandwich(
+            ProductInteractable product,
+            Transform layerPoint)
+        {
+            if (product == null || layerPoint == null)
+            {
+                return false;
+            }
+
+            EnsureOccupants();
+            for (int i = 0; i < occupants.Length; i++)
+            {
+                if (occupants[i] == product &&
+                    product.PlaceInSandwich(this, layerPoint))
+                {
+                    occupants[i] = null;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         int FindNextFreePoint()
         {
             EnsureOccupants();

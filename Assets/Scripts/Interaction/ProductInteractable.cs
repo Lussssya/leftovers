@@ -152,6 +152,28 @@ namespace Leftovers
             IsHeld = false;
         }
 
+        public bool PlaceInSandwich(AssemblyTable table, Transform layerPoint)
+        {
+            if (IsHeld || table == null || placedTable != table ||
+                layerPoint == null)
+            {
+                return false;
+            }
+
+            DisableProductColliders();
+            KeepRigidbodyFixed();
+            if (productRigidbody != null)
+            {
+                productRigidbody.detectCollisions = false;
+            }
+
+            transform.SetParent(layerPoint, false);
+            transform.localPosition = Vector3.zero;
+            transform.localRotation = Quaternion.identity;
+            placedTable = null;
+            return true;
+        }
+
         void CacheProductComponents()
         {
             productColliders = GetComponentsInChildren<Collider>(true);
@@ -182,6 +204,22 @@ namespace Leftovers
                 if (productCollider != null)
                 {
                     productCollider.enabled = colliderEnabledStates[i];
+                }
+            }
+        }
+
+        void DisableProductColliders()
+        {
+            if (productColliders == null)
+            {
+                productColliders = GetComponentsInChildren<Collider>(true);
+            }
+
+            for (int i = 0; i < productColliders.Length; i++)
+            {
+                if (productColliders[i] != null)
+                {
+                    productColliders[i].enabled = false;
                 }
             }
         }

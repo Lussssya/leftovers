@@ -1,5 +1,4 @@
 using UnityEngine;
-using System.Collections.Generic;
 
 namespace Leftovers
 {
@@ -9,14 +8,9 @@ namespace Leftovers
         [SerializeField] Transform interactionOrigin;
         [SerializeField] Transform holdPoint;
         KitchenHud kitchenHud;
-        // Invisible inventory for collected ingredients
-        private readonly List<ProductInteractable> basket =
-            new List<ProductInteractable>();
-
-        public int BasketCount => basket.Count;
-        public IReadOnlyList<ProductInteractable> BasketItems => basket;
         [SerializeField] AssemblyTable assemblyTable;
         [SerializeField] SandwichAssembly sandwichAssembly;
+        [SerializeField] bool handleInputDirectly = true;
         [SerializeField] float dropDistance = 1.5f;
         [SerializeField] float dropSurfaceOffset = 0.3f;
         [SerializeField] float dropRayHeight = 1.5f;
@@ -72,26 +66,12 @@ namespace Leftovers
                 return;
             }
             
-            if (Input.GetKeyDown(KeyCode.E) &&
-                kitchenHud != null &&
-                kitchenHud.RoundCompleted &&
-                sandwichAssembly != null &&
-                sandwichAssembly.IsInRange(GetInteractionOriginPosition()))
-            {
-                if (sandwichAssembly.TryPlaceNext(BasketItems))
-                {
-                    ClearTarget();
-                    return;
-                }
-            }
-
-            
             if (HeldProduct != null)
             {
                 ClearTarget();
-                if (Input.GetKeyDown(KeyCode.E))
+                if (handleInputDirectly && Input.GetKeyDown(KeyCode.E))
                 {
-                    InteractWithHeldProduct();
+                    TryInteract();
                 }
 
                 return;
@@ -99,10 +79,45 @@ namespace Leftovers
 
             Physics.SyncTransforms();
             UpdateTargetSelection();
-            if (TargetedProduct != null && Input.GetKeyDown(KeyCode.E))
+            if (handleInputDirectly && Input.GetKeyDown(KeyCode.E))
+            {
+                TryInteract();
+            }
+        }
+
+        public bool TryInteract()
+        {
+            if (HeldProduct != null)
+            {
+                InteractWithHeldProduct();
+                return true;
+            }
+
+            if (TryAdvanceSandwichAssembly())
+            {
+                ClearTarget();
+                return true;
+            }
+
+            if (TargetedProduct != null)
             {
                 PickUpTargetedProduct();
+                return true;
             }
+
+            return false;
+        }
+
+        bool TryAdvanceSandwichAssembly()
+        {
+            if (kitchenHud == null || !kitchenHud.RoundCompleted ||
+                sandwichAssembly == null ||
+                !sandwichAssembly.IsInRange(GetInteractionOriginPosition()))
+            {
+                return false;
+            }
+
+            return sandwichAssembly.TryPlaceNext();
         }
 
         void InteractWithHeldProduct()
@@ -128,6 +143,12 @@ namespace Leftovers
 
             HeldProduct = null;
             ClearTarget();
+
+            if (kitchenHud != null)
+            {
+                kitchenHud.NotifyRequestedProductPlaced(product);
+            }
+
             return true;
         }
 
@@ -141,35 +162,13 @@ namespace Leftovers
             }
 
             ProductInteractable selectedProduct = TargetedProduct;
-
-            // Kitchen ingredient collection system
-            if (kitchenHud != null)
+            if (holdPoint == null)
             {
-                // Do not collect extra ingredients after the
-                // request sequence has finished.
-                if (kitchenHud.RoundCompleted)
-                {
-                    return;
-                }
-
-                // Check whether this ingredient matches the request.
-                bool accepted =
-                    kitchenHud.TryAcceptProduct(selectedProduct);
-
-                if (!accepted)
-                {
-                    // Wrong ingredient: leave it in its original position.
-                    return;
-                }
-
-                // Correct ingredient: save it in the basket.
-                StoreInBasket(selectedProduct);
                 return;
             }
 
-            // Preserve normal pickup behavior in other scenes
-            // that do not use the KitchenHud request system.
-            if (holdPoint == null)
+            if (kitchenHud != null &&
+                !kitchenHud.CanPickRequestedProduct(selectedProduct))
             {
                 return;
             }
@@ -178,34 +177,6 @@ namespace Leftovers
             ClearTarget();
             HeldProduct.PickUp(holdPoint);
         }
-        
-        void StoreInBasket(ProductInteractable ingredient)
-        {
-            if (ingredient == null || basket.Contains(ingredient))
-            {
-                return;
-            }
-
-            // Remember the collected ingredient.
-            basket.Add(ingredient);
-
-            // Clear the current target.
-            ClearTarget();
-
-            // Hide the ingredient from the kitchen.
-            // Do not destroy it: we need it for assembly later.
-            ingredient.gameObject.SetActive(false);
-
-            Debug.Log(
-                "Added to basket: " + ingredient.DisplayName
-            );
-
-            Debug.Log(
-                "Basket contains " + basket.Count + " ingredients."
-            );
-        }
-
-
 
         void DropHeldProduct()
         {
