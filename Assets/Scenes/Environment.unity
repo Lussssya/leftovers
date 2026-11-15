@@ -11140,6 +11140,10 @@ MonoBehaviour:
   kitchenSounds:
   - {fileID: 847515531}
   - {fileID: 895368919}
+  - {fileID: 32091183}
+  - {fileID: 716275127}
+  - {fileID: 892390043}
+  - {fileID: 1410706500}
   maximumNoise: 100
   recoveryPerSecond: 8
   movementNoisePerMeter: 4

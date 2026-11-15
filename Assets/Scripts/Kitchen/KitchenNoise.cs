@@ -10,6 +10,7 @@ namespace Leftovers
         [SerializeField] float maximumNoise = 100f;
         [SerializeField] float recoveryPerSecond = 8f;
         [SerializeField] float movementNoisePerMeter = 4f;
+        [SerializeField] float itemDropNoise = 18f;
         [SerializeField] float soundNoisePerSecond = 24f;
         [SerializeField] float soundSensitivity = 2f;
         [SerializeField, Range(0f, 1f)] float quietSnoringVolume = 0.55f;
@@ -132,6 +133,11 @@ namespace Leftovers
             }
 
             AddNoise(amount);
+        }
+
+        public void AddItemDropNoise()
+        {
+            AddNoise(itemDropNoise);
         }
 
         public void AddNoise(float amount)

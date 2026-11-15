@@ -8,6 +8,7 @@ namespace Leftovers
         [SerializeField] Transform interactionOrigin;
         [SerializeField] Transform holdPoint;
         KitchenHud kitchenHud;
+        KitchenNoise kitchenNoise;
         [SerializeField] AssemblyTable assemblyTable;
         [SerializeField] SandwichAssembly sandwichAssembly;
         [SerializeField] bool handleInputDirectly = true;
@@ -71,6 +72,7 @@ namespace Leftovers
             }
 
             kitchenHud = GetComponent<KitchenHud>();
+            kitchenNoise = FindObjectOfType<KitchenNoise>();
             doors = GetComponent<MouseDoorInteractor>();
             cabinets = GetComponent<MouseCabinetInteractor>();
             food = GetComponent<MouseFoodInteractor>();
@@ -91,7 +93,7 @@ namespace Leftovers
 
             if (Time.timeScale == 0f || Input.GetKeyDown(KeyCode.Escape))
             {
-                DropHeldProduct();
+                DropHeldProduct(false);
                 ClearTarget();
                 return;
             }
@@ -221,7 +223,7 @@ namespace Leftovers
             PlayItemSound(pickupClip);
         }
 
-        void DropHeldProduct()
+        void DropHeldProduct(bool makeNoise = true)
         {
             if (HeldProduct == null)
             {
@@ -232,6 +234,10 @@ namespace Leftovers
             Quaternion dropRotation = Quaternion.Euler(0f, interactionCamera.transform.eulerAngles.y, 0f);
             HeldProduct.Drop(dropPosition, dropRotation);
             PlayItemSound(dropClip);
+            if (makeNoise && kitchenNoise != null)
+            {
+                kitchenNoise.AddItemDropNoise();
+            }
             HeldProduct = null;
             ClearTarget();
         }
@@ -684,7 +690,7 @@ namespace Leftovers
             ClearTarget();
             if (HeldProduct != null && interactionCamera != null)
             {
-                DropHeldProduct();
+                DropHeldProduct(false);
             }
         }
     }

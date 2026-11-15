@@ -25,11 +25,13 @@ namespace Leftovers
         Collider[] heldColliders;
         bool[] colliderStates;
         ProductInteractor ingredients;
+        KitchenNoise kitchenNoise;
         Collider servingTable;
 
         void Start()
         {
             ingredients = GetComponent<ProductInteractor>();
+            kitchenNoise = FindObjectOfType<KitchenNoise>();
             GameObject table = GameObject.Find("Dining tabletop");
             if (table != null) servingTable = table.GetComponent<Collider>();
         }
@@ -138,6 +140,10 @@ namespace Leftovers
                 return;
             }
             Held.Drop();
+            if (place && kitchenNoise != null)
+            {
+                kitchenNoise.AddItemDropNoise();
+            }
             Held = null;
         }
 
