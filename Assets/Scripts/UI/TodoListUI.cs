@@ -24,6 +24,38 @@ namespace Leftovers
         };
 
         private bool[] completed;
+        FridgeHum fridge;
+        Microwave microwave;
+        MicrowaveFood sandwich;
+
+        void Start()
+        {
+            fridge = FindObjectOfType<FridgeHum>();
+            microwave = FindObjectOfType<Microwave>();
+        }
+
+        public void TrackSandwich(MicrowaveFood food)
+        {
+            sandwich = food;
+        }
+
+        void LateUpdate()
+        {
+            if (fridge != null && (DoorOpened(fridge.upperDoor) || DoorOpened(fridge.lowerDoor)))
+                CompleteTask(1);
+
+            if (microwave == null || sandwich == null) return;
+
+            if (microwave.food == sandwich) CompleteTask(5);
+            if (sandwich.IsCooked) CompleteTask(6);
+            if (completed[4] && sandwich.IsCooked && microwave.food != sandwich)
+                CompleteTask(7);
+        }
+
+        bool DoorOpened(FridgeDoor door)
+        {
+            return door != null && door.Angle >= 5f;
+        }
 
         private readonly Color completedColor =
             new Color(0.35f, 0.55f, 0.35f);
@@ -44,7 +76,7 @@ namespace Leftovers
         {
             int index = taskNumber - 1;
 
-            if (index < 0 || index >= tasks.Length)
+            if (index < 0 || index >= tasks.Length || completed[index])
                 return;
 
             completed[index] = true;

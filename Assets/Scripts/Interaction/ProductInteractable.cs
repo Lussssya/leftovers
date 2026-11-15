@@ -8,6 +8,11 @@ namespace Leftovers
         [SerializeField] float hoverPadding = 0.15f;
         [SerializeField] BoxCollider hoverArea;
 
+        [SerializeField] Transform[] spawnSurfaces;
+        [SerializeField] float spawnForwardOffset;
+        [SerializeField] Vector3 spawnRotation;
+        Transform originalParent;
+
         Collider[] productColliders;
         bool[] colliderEnabledStates;
         Rigidbody productRigidbody;
@@ -38,6 +43,32 @@ namespace Leftovers
             EnsureHoverArea();
             CacheProductComponents();
             UpdateHoverArea();
+        }
+
+        void Start()
+        {
+            originalParent = transform.parent;
+            if (spawnSurfaces == null || spawnSurfaces.Length == 0) return;
+
+            PlaceOnSpawnSurface(spawnSurfaces[Random.Range(0, spawnSurfaces.Length)]);
+        }
+
+        void PlaceOnSpawnSurface(Transform surface)
+        {
+            if (surface == null) return;
+
+            Renderer surfaceRenderer = surface.GetComponent<Renderer>();
+            Renderer productRenderer = GetComponent<Renderer>();
+            if (surfaceRenderer == null || productRenderer == null) return;
+
+            transform.rotation = Quaternion.Euler(spawnRotation);
+            Bounds shelf = surfaceRenderer.bounds;
+            Bounds product = productRenderer.bounds;
+            Vector3 shift = shelf.center - product.center;
+            shift += surface.forward * spawnForwardOffset;
+            shift.y = shelf.max.y - product.min.y;
+            transform.SetParent(surface, true);
+            transform.position += shift;
         }
 
         void Reset()
@@ -110,6 +141,8 @@ namespace Leftovers
             else
             {
                 previousParent = transform.parent;
+                if (spawnSurfaces != null && spawnSurfaces.Length > 0)
+                    previousParent = originalParent;
             }
 
             CacheProductComponents();
@@ -131,7 +164,11 @@ namespace Leftovers
             transform.SetParent(previousParent, true);
             transform.SetPositionAndRotation(position, rotation);
             RestoreColliders();
-            RestoreRigidbody();
+            if (productRigidbody == null) productRigidbody = gameObject.AddComponent<Rigidbody>();
+            productRigidbody.isKinematic = false;
+            productRigidbody.useGravity = true;
+            productRigidbody.detectCollisions = true;
+            productRigidbody.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
             hasSavedRigidbodyState = false;
             IsHeld = false;
         }

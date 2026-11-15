@@ -304,12 +304,6 @@ namespace Leftovers
             {
                 return false;
             }
-            Vector3 position = turntable.TransformPoint(new Vector3(0f, 0.002f, 0f));
-            if (!item.CanReach(position))
-            {
-                return false;
-            }
-
             food = item;
             SetupSteamFlow(food.steam);
             item.StopCooling();

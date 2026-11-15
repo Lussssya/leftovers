@@ -10,7 +10,7 @@ The page permits editing, redistribution, and commercial game use. Attribution
 is not required, but retained here to credit the recording's author.
 
 The recording contains five refrigerator openings/closings and compressor
-noise. Clips here are edited excerpts, not AI-generated audio. Processing:
+noise. Clips here are edited excerpts. Processing:
 mono PCM WAV at 48 kHz, compressor/DC reduction, pre-roll trimming, short fades,
 peak adjustment, low-pass softening for gentle closes, crossfade for movement.
 The movement layer is an edited handling-noise excerpt, not a continuous

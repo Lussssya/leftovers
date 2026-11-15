@@ -10,7 +10,30 @@ namespace Leftovers
         [SerializeField] KitchenHud kitchenHud;
         [SerializeField] TodoListUI todoList;
 
+        [SerializeField] Transform finishedSandwich;
+        [SerializeField] Collider assemblySurface;
+
         int nextIngredientIndex;
+
+        void ShowFinishedSandwich()
+        {
+            if (finishedSandwich == null) return;
+
+            for (int i = 0; i < nextIngredientIndex; i++)
+            {
+                ProductInteractable ingredient = layerSlots[i].GetComponentInChildren<ProductInteractable>();
+                if (ingredient != null) ingredient.gameObject.SetActive(false);
+            }
+
+            finishedSandwich.SetParent(null, true);
+            Vector3 position = layerSlots[0].position;
+            if (assemblySurface != null) position.y = assemblySurface.bounds.max.y;
+            finishedSandwich.SetPositionAndRotation(position, layerSlots[0].rotation);
+            finishedSandwich.gameObject.SetActive(true);
+            MicrowaveFood food = finishedSandwich.GetComponent<MicrowaveFood>();
+            food.Place();
+            if (todoList != null) todoList.TrackSandwich(food);
+        }
 
         public bool IsFinished
         {
@@ -20,6 +43,18 @@ namespace Leftovers
                     kitchenHud.RequestedProductCount > 0 &&
                     nextIngredientIndex >= kitchenHud.RequestedProductCount;
             }
+        }
+
+        public bool IsAimedAt(Camera camera)
+        {
+            if (assemblySurface == null) return true;
+
+            Vector2 pointer = Input.mousePosition;
+            if (Cursor.lockState == CursorLockMode.Locked) pointer = camera.pixelRect.center;
+            Ray ray = camera.ScreenPointToRay(pointer);
+            RaycastHit hit;
+            return Physics.Raycast(ray, out hit, 10f, ~0, QueryTriggerInteraction.Ignore) &&
+                (hit.collider == assemblySurface || hit.transform.IsChildOf(transform));
         }
 
         public bool IsInRange(Vector3 playerPosition)
@@ -67,6 +102,7 @@ namespace Leftovers
 
             if (IsFinished)
             {
+                ShowFinishedSandwich();
                 Debug.Log("Sandwich assembled successfully!");
                 if (todoList != null)
                 {

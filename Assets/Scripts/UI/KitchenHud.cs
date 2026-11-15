@@ -419,7 +419,6 @@ namespace Leftovers
 
             if (todoListUI != null)
             {
-                todoListUI.CompleteTask(2);
                 todoListUI.CompleteTask(3);
             }
         }
@@ -445,6 +444,13 @@ namespace Leftovers
             ShowFeedback("Wrong product! Find the " + requestedName + ".");
             Debug.Log("Wrong product: " + product.DisplayName);
             return false;
+        }
+
+        public void NotifyRequestedProductPickedUp(ProductInteractable product)
+        {
+            if (todoListUI != null && requestActive &&
+                currentRequestIndex == RequestedProductCount - 1 && IsCurrentRequestedProduct(product))
+                todoListUI.CompleteTask(2);
         }
 
         public bool NotifyRequestedProductPlaced(ProductInteractable product)

@@ -43,6 +43,16 @@ namespace Leftovers
         }
 
         float lastTargetedTime;
+        MouseDoorInteractor doors;
+        MouseCabinetInteractor cabinets;
+        MouseFoodInteractor food;
+
+        public Transform HoldPoint { get { return holdPoint; } }
+
+        public bool IsCarryingIngredient
+        {
+            get { return isActiveAndEnabled && HeldProduct != null; }
+        }
 
        
         void Awake()
@@ -53,6 +63,9 @@ namespace Leftovers
             }
 
             kitchenHud = GetComponent<KitchenHud>();
+            doors = GetComponent<MouseDoorInteractor>();
+            cabinets = GetComponent<MouseCabinetInteractor>();
+            food = GetComponent<MouseFoodInteractor>();
 
             if (kitchenHud == null)
             {
@@ -63,20 +76,32 @@ namespace Leftovers
         }
 
 
-        void Update()
+        void LateUpdate()
         {
-            if (interactionCamera == null || Time.timeScale == 0f)
+            if (interactionCamera == null) return;
+            if (food != null && food.InteractionFrame == Time.frameCount) return;
+
+            if (Time.timeScale == 0f || Input.GetKeyDown(KeyCode.Escape))
             {
+                DropHeldProduct();
                 ClearTarget();
                 return;
             }
             
+            if ((doors != null && doors.Held != null) ||
+                (cabinets != null && cabinets.Held != null) ||
+                (food != null && food.Held != null))
+            {
+                ClearTarget();
+                return;
+            }
+
             if (HeldProduct != null)
             {
                 ClearTarget();
                 if (handleInputDirectly && Input.GetKeyDown(KeyCode.E))
                 {
-                    TryInteract();
+                    InteractWithHeldProduct();
                 }
 
                 return;
@@ -179,13 +204,13 @@ namespace Leftovers
                 return;
             }
 
+            selectedProduct.PickUp(holdPoint);
+            if (!selectedProduct.IsHeld) return;
+
             HeldProduct = selectedProduct;
             ClearTarget();
-            HeldProduct.PickUp(holdPoint);
-            if (HeldProduct.IsHeld)
-            {
-                PlayItemSound(pickupClip);
-            }
+            if (kitchenHud != null) kitchenHud.NotifyRequestedProductPickedUp(HeldProduct);
+            PlayItemSound(pickupClip);
         }
 
         void DropHeldProduct()
@@ -196,8 +221,7 @@ namespace Leftovers
             }
 
             Vector3 dropPosition = FindDropPosition();
-            float cameraYaw = interactionCamera.transform.eulerAngles.y;
-            Quaternion dropRotation = Quaternion.Euler(0f, cameraYaw, 0f);
+            Quaternion dropRotation = Quaternion.Euler(0f, interactionCamera.transform.eulerAngles.y, 0f);
             HeldProduct.Drop(dropPosition, dropRotation);
             PlayItemSound(dropClip);
             HeldProduct = null;

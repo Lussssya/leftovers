@@ -6991,7 +6991,7 @@ Transform:
   m_GameObject: {fileID: 300220393}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -4.74, y: 2.8249998, z: 0.15}
+  m_LocalPosition: {x: -4.91, y: 1.9493, z: -0.30}
   m_LocalScale: {x: 0.45, y: 0.45, z: 0.45}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -10067,6 +10067,12 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier:
   displayName: Tomato
+  spawnForwardOffset: 0.2
+  spawnSurfaces:
+  - {fileID: 1900071000}
+  - {fileID: 1900071001}
+  - {fileID: 1900071002}
+  - {fileID: 1900071003}
   hoverPadding: 0.15
   hoverArea: {fileID: 145296253}
 --- !u!65 &434030586
@@ -20379,6 +20385,8 @@ MonoBehaviour:
   assemblyTable: {fileID: 840251486}
   kitchenHud: {fileID: 1471790029}
   todoList: {fileID: 1997496773}
+  finishedSandwich: {fileID: 1336947255}
+  assemblySurface: {fileID: 191949908}
 --- !u!114 &840251486
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -24800,6 +24808,13 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier:
   displayName: Toast
+  spawnForwardOffset: 0.16
+  spawnRotation: {x: 90, y: 0, z: 0}
+  spawnSurfaces:
+  - {fileID: 1900071010}
+  - {fileID: 1900071011}
+  - {fileID: 1900071012}
+  - {fileID: 1900071013}
   hoverPadding: 0.15
   hoverArea: {fileID: 1364647039}
 --- !u!65 &1045973218
@@ -31003,6 +31018,10 @@ PrefabInstance:
     - target: {fileID: 1639337150378493236, guid: b2891797a838bb04396f1185542b3fe1, type: 3}
       propertyPath: m_Name
       value: Sandwich
+      objectReference: {fileID: 0}
+    - target: {fileID: 1639337150378493236, guid: b2891797a838bb04396f1185542b3fe1, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -38285,7 +38304,7 @@ Transform:
   m_GameObject: {fileID: 1646835490}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 4.55, y: 3.008, z: 0.05}
+  m_LocalPosition: {x: -4.56, y: 1.8993, z: -0.30}
   m_LocalScale: {x: 0.35, y: 0.35, z: 0.35}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -48244,6 +48263,46 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2142146470}
   m_Mesh: {fileID: 4300000, guid: 5ccc8eeb05ca13d42bd691a633c66200, type: 2}
+--- !u!4 &1900071000 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2422088243002952225, guid: e7e07c1ea5b724d9caefdd82d406d74d, type: 3}
+  m_PrefabInstance: {fileID: 714492265}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &1900071001 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2422088243002952225, guid: e7e07c1ea5b724d9caefdd82d406d74d, type: 3}
+  m_PrefabInstance: {fileID: 765191950}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &1900071002 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2422088243002952225, guid: e7e07c1ea5b724d9caefdd82d406d74d, type: 3}
+  m_PrefabInstance: {fileID: 1332129366}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &1900071003 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2422088243002952225, guid: e7e07c1ea5b724d9caefdd82d406d74d, type: 3}
+  m_PrefabInstance: {fileID: 2056042207}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &1900071010 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 8772654751796239123, guid: df71e4299a15249389f75b95313d9e83, type: 3}
+  m_PrefabInstance: {fileID: 204289802}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &1900071011 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 8772654751796239123, guid: df71e4299a15249389f75b95313d9e83, type: 3}
+  m_PrefabInstance: {fileID: 1345388046}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &1900071012 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 8772654751796239123, guid: df71e4299a15249389f75b95313d9e83, type: 3}
+  m_PrefabInstance: {fileID: 1709835963}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &1900071013 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2416884549608295780, guid: e7e07c1ea5b724d9caefdd82d406d74d, type: 3}
+  m_PrefabInstance: {fileID: 765191950}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
