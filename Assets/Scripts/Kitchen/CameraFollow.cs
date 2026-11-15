@@ -9,6 +9,7 @@ namespace Leftovers
         [SerializeField] Transform cameraPivot;
         [SerializeField] float edgeThreshold = 0.08f;
         [SerializeField] float edgeLookSpeed = 60f;
+        [SerializeField] float horizontalLookSpeed = 80f;
         [SerializeField] float defaultPitch = 12f;
         [SerializeField] float minPitch = -6f;
         [SerializeField] float maxPitch = 25f;
@@ -106,8 +107,9 @@ namespace Leftovers
             float horizontalInput = GetEdgeInput(normalizedX);
             float verticalInput = GetEdgeInput(normalizedY);
             float lookAmount = edgeLookSpeed * Time.deltaTime;
+            float horizontalLookAmount = horizontalLookSpeed * Time.deltaTime;
 
-            target.Rotate(0f, horizontalInput * lookAmount, 0f, Space.World);
+            target.Rotate(0f, horizontalInput * horizontalLookAmount, 0f, Space.World);
             pitch = pitch - verticalInput * lookAmount;
             pitch = Mathf.Clamp(pitch, minPitch, maxPitch);
             ApplyPitch();

@@ -7,7 +7,15 @@ namespace Leftovers
         [SerializeField] Camera interactionCamera;
         [SerializeField] Transform interactionOrigin;
         [SerializeField] Transform holdPoint;
+        KitchenHud kitchenHud;
         [SerializeField] AssemblyTable assemblyTable;
+        [SerializeField] SandwichAssembly sandwichAssembly;
+        [SerializeField] bool handleInputDirectly = true;
+        [SerializeField] AudioSource itemAudioSource;
+        [SerializeField] AudioClip pickupClip;
+        [SerializeField] AudioClip placeClip;
+        [SerializeField] AudioClip dropClip;
+        [SerializeField] [Range(0f, 1f)] float itemVolume = 0.25f;
         [SerializeField] float dropDistance = 1.5f;
         [SerializeField] float dropSurfaceOffset = 0.3f;
         [SerializeField] float dropRayHeight = 1.5f;
@@ -36,13 +44,24 @@ namespace Leftovers
 
         float lastTargetedTime;
 
+       
         void Awake()
         {
             if (interactionCamera == null)
             {
                 interactionCamera = GetComponent<Camera>();
             }
+
+            kitchenHud = GetComponent<KitchenHud>();
+
+            if (kitchenHud == null)
+            {
+                Debug.LogWarning(
+                    "KitchenHud not found on ProductInteractor object."
+                );
+            }
         }
+
 
         void Update()
         {
@@ -51,13 +70,13 @@ namespace Leftovers
                 ClearTarget();
                 return;
             }
-
+            
             if (HeldProduct != null)
             {
                 ClearTarget();
-                if (Input.GetKeyDown(KeyCode.E))
+                if (handleInputDirectly && Input.GetKeyDown(KeyCode.E))
                 {
-                    InteractWithHeldProduct();
+                    TryInteract();
                 }
 
                 return;
@@ -65,10 +84,45 @@ namespace Leftovers
 
             Physics.SyncTransforms();
             UpdateTargetSelection();
-            if (TargetedProduct != null && Input.GetKeyDown(KeyCode.E))
+            if (handleInputDirectly && Input.GetKeyDown(KeyCode.E))
+            {
+                TryInteract();
+            }
+        }
+
+        public bool TryInteract()
+        {
+            if (HeldProduct != null)
+            {
+                InteractWithHeldProduct();
+                return true;
+            }
+
+            if (TryAdvanceSandwichAssembly())
+            {
+                ClearTarget();
+                return true;
+            }
+
+            if (TargetedProduct != null)
             {
                 PickUpTargetedProduct();
+                return true;
             }
+
+            return false;
+        }
+
+        bool TryAdvanceSandwichAssembly()
+        {
+            if (kitchenHud == null || !kitchenHud.RoundCompleted ||
+                sandwichAssembly == null ||
+                !sandwichAssembly.IsInRange(GetInteractionOriginPosition()))
+            {
+                return false;
+            }
+
+            return sandwichAssembly.TryPlaceNext();
         }
 
         void InteractWithHeldProduct()
@@ -94,19 +148,44 @@ namespace Leftovers
 
             HeldProduct = null;
             ClearTarget();
+
+            if (kitchenHud != null)
+            {
+                kitchenHud.NotifyRequestedProductPlaced(product);
+            }
+
+            PlayItemSound(placeClip);
             return true;
         }
 
+        
+        
         void PickUpTargetedProduct()
         {
-            if (HeldProduct != null || TargetedProduct == null || holdPoint == null)
+            if (HeldProduct != null || TargetedProduct == null)
             {
                 return;
             }
 
-            HeldProduct = TargetedProduct;
+            ProductInteractable selectedProduct = TargetedProduct;
+            if (holdPoint == null)
+            {
+                return;
+            }
+
+            if (kitchenHud != null &&
+                !kitchenHud.CanPickRequestedProduct(selectedProduct))
+            {
+                return;
+            }
+
+            HeldProduct = selectedProduct;
             ClearTarget();
             HeldProduct.PickUp(holdPoint);
+            if (HeldProduct.IsHeld)
+            {
+                PlayItemSound(pickupClip);
+            }
         }
 
         void DropHeldProduct()
@@ -120,8 +199,17 @@ namespace Leftovers
             float cameraYaw = interactionCamera.transform.eulerAngles.y;
             Quaternion dropRotation = Quaternion.Euler(0f, cameraYaw, 0f);
             HeldProduct.Drop(dropPosition, dropRotation);
+            PlayItemSound(dropClip);
             HeldProduct = null;
             ClearTarget();
+        }
+
+        void PlayItemSound(AudioClip clip)
+        {
+            if (itemAudioSource != null && clip != null)
+            {
+                itemAudioSource.PlayOneShot(clip, itemVolume);
+            }
         }
 
         Vector3 FindDropPosition()
@@ -237,7 +325,9 @@ namespace Leftovers
 
         ProductInteractable FindMouseHoverTarget()
         {
-            return FindMouseHoverTargetAt(Input.mousePosition);
+            Vector2 pointer = Input.mousePosition;
+            if (Cursor.lockState == CursorLockMode.Locked) pointer = interactionCamera.pixelRect.center;
+            return FindMouseHoverTargetAt(pointer);
         }
 
         ProductInteractable FindMouseHoverTargetAt(Vector2 pointer)

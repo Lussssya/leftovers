@@ -32,6 +32,24 @@ namespace Leftovers
             }
         }
 
+        public bool IsOpen
+        {
+            get
+            {
+                if (hingedDoor != null)
+                {
+                    return hingedDoor.IsOpen;
+                }
+
+                if (!isHeld && Mathf.Abs(targetOpen - currentOpen) > 0.001f)
+                {
+                    return targetOpen > maximumOpen * 0.5f;
+                }
+
+                return currentOpen > maximumOpen * 0.5f;
+            }
+        }
+
         bool isHeld;
         Vector3 closedPosition;
         Quaternion closedRotation;
@@ -99,6 +117,26 @@ namespace Leftovers
 
             isHeld = false;
             targetOpen = currentOpen;
+        }
+
+        public void Toggle()
+        {
+            if (hingedDoor != null)
+            {
+                hingedDoor.Toggle();
+                return;
+            }
+
+            Initialize();
+            isHeld = false;
+            if (IsOpen)
+            {
+                targetOpen = 0f;
+            }
+            else
+            {
+                targetOpen = maximumOpen;
+            }
         }
 
         public Vector3 PointAtOpen(Vector3 localPoint, float amount)

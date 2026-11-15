@@ -1,0 +1,6 @@
+PASS: Unity loaded all seven product instances and the shared color texture.
+PASS: Six mesh assets contain valid geometry and stay inside the original solid colliders.
+PASS: All seven products support pickup, table placement, pickup again, and drop.
+PASS: Drop restores the original parent and collider states.
+PASS: Native Unity product render saved to unity-products.png.
+These checks call the interaction methods in Edit mode. Manual first-person input remains untested.

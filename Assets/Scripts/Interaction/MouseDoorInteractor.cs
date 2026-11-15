@@ -75,10 +75,11 @@ namespace Leftovers
                 return;
             }
 
-            FridgeDoorHandle handle = hit.collider.GetComponent<FridgeDoorHandle>();
+            FridgeDoorHandle handle =
+                hit.collider.GetComponentInParent<FridgeDoorHandle>();
             if (handle == null)
             {
-                FridgeDoor door = hit.collider.GetComponent<FridgeDoor>();
+                FridgeDoor door = hit.collider.GetComponentInParent<FridgeDoor>();
                 if (door != null)
                 {
                     handle = door.GetComponentInChildren<FridgeDoorHandle>();
