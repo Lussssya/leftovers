@@ -35,6 +35,7 @@ public class FirstPersonController : MonoBehaviour
     [SerializeField] AudioClip footstepClip;
     [SerializeField] float stepDistance = 1.4f;
     [SerializeField] [Range(0f, 1f)] float footstepVolume = 0.15f;
+    [SerializeField] [Min(0f)] float footstepClipGain = 1f;
     public bool IsPaused { get; private set; }
 
     VisualElement aimDot;
@@ -246,7 +247,7 @@ public class FirstPersonController : MonoBehaviour
             distanceSinceStep = 0f;
             if (footstepSource != null && footstepClip != null)
             {
-                footstepSource.PlayOneShot(footstepClip, footstepVolume);
+                footstepSource.PlayOneShot(footstepClip, footstepVolume * footstepClipGain);
             }
         }
     }

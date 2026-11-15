@@ -2,13 +2,16 @@ using UnityEngine;
 
 namespace Leftovers
 {
+    [DefaultExecutionOrder(200)]
     public class FridgeDoorAlarm : MonoBehaviour
     {
         [SerializeField] FridgeDoor door;
+        [SerializeField] FridgeDoor secondDoor;
         [SerializeField] float openWarningDelay = 10f;
         [SerializeField] float beepInterval = 1f;
         [SerializeField] AudioClip beepClip;
         [SerializeField] AudioSource audioSource;
+        [SerializeField] [Min(0f)] float beepVolume = 1f;
         [SerializeField] float openAngleThreshold = 1f;
 
         float openTime;
@@ -23,7 +26,7 @@ namespace Leftovers
             }
         }
 
-        void Update()
+        void LateUpdate()
         {
             UpdateAlarm(Time.deltaTime);
         }
@@ -60,12 +63,9 @@ namespace Leftovers
 
         bool IsDoorOpen()
         {
-            if (door == null)
-            {
-                return false;
-            }
-
-            return door.Angle >= Mathf.Max(0f, openAngleThreshold);
+            float threshold = Mathf.Max(0f, openAngleThreshold);
+            return (door != null && door.Angle >= threshold) ||
+                (secondDoor != null && secondDoor.Angle >= threshold);
         }
 
         void PlayBeep()
@@ -77,7 +77,7 @@ namespace Leftovers
 
             if (!audioSource.isPlaying)
             {
-                audioSource.PlayOneShot(beepClip);
+                audioSource.PlayOneShot(beepClip, beepVolume);
             }
         }
 
