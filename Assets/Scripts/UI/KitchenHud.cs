@@ -39,9 +39,11 @@ namespace Leftovers
         }
 
         CameraFollow viewController;
+        FirstPersonController firstPersonController;
         MouseDoorInteractor doorInteractor;
         MouseCabinetInteractor cabinetInteractor;
         ProductInteractor productInteractor;
+        ProductHidingSpots productHidingSpots;
         FridgeDoorAlarm[] fridgeAlarms;
         ProductInteractable highlightedProduct;
         Renderer highlightedHandle;
@@ -54,6 +56,13 @@ namespace Leftovers
         GUIStyle productControlStyle;
         GUIStyle requestStyle;
         GUIStyle fridgeWarningStyle;
+        GUIStyle productRequestHeaderStyle;
+        GUIStyle productRequestTitleStyle;
+        GUIStyle productRequestHintStyle;
+        GUIStyle productRequestShadowStyle;
+        Texture2D productRequestFrame;
+        Texture2D productRequestIcon;
+        string productRequestIconName;
         bool requestActive = true;
         float fridgeWarningTime;
 
@@ -63,10 +72,27 @@ namespace Leftovers
         void Awake()
         {
             viewController = GetComponent<CameraFollow>();
+            firstPersonController = GetComponentInParent<FirstPersonController>();
             doorInteractor = GetComponent<MouseDoorInteractor>();
             cabinetInteractor = GetComponent<MouseCabinetInteractor>();
             productInteractor = GetComponent<ProductInteractor>();
+            productHidingSpots = GetComponent<ProductHidingSpots>();
             fridgeAlarms = FindObjectsOfType<FridgeDoorAlarm>();
+        }
+
+        void Start()
+        {
+            PlaceRequestedProduct();
+        }
+
+        void PlaceRequestedProduct()
+        {
+            if (productHidingSpots != null && requestActive && requestedProducts != null
+                && currentRequestIndex < requestedProducts.Length
+                && productHidingSpots.HasProduct(requestedProducts[currentRequestIndex]))
+            {
+                productHidingSpots.PlaceRequestedProduct(requestedProducts[currentRequestIndex]);
+            }
         }
 
         void LateUpdate()
@@ -75,9 +101,7 @@ namespace Leftovers
 
             ProductInteractable nextProduct = null;
             Renderer nextHandle = null;
-            bool gameplayActive = Time.timeScale > 0f &&
-                (viewController == null || !viewController.IsPaused);
-            if (gameplayActive)
+            if (!IsGamePaused())
             {
                 if (productInteractor != null)
                 {
@@ -215,7 +239,7 @@ namespace Leftovers
         {
             CreateStyles();
 
-            if (viewController != null && viewController.IsPaused)
+            if (IsGamePaused())
             {
                 DrawPauseMenu();
             }
@@ -235,7 +259,7 @@ namespace Leftovers
                 DrawFridgeWarning();
             }
 
-            if (viewController != null && viewController.IsPaused)
+            if (IsGamePaused())
             {
                 return;
             }
@@ -435,7 +459,8 @@ namespace Leftovers
                 return true;
             }
 
-            if (IsCurrentRequestedProduct(product))
+            if (IsCurrentRequestedProduct(product) &&
+                (productHidingSpots == null || productHidingSpots.CanCollectProduct(product)))
             {
                 return true;
             }
@@ -448,6 +473,11 @@ namespace Leftovers
 
         public void NotifyRequestedProductPickedUp(ProductInteractable product)
         {
+            if (productHidingSpots != null)
+            {
+                productHidingSpots.MarkProductCollected(product);
+            }
+
             if (todoListUI != null && requestActive &&
                 currentRequestIndex == RequestedProductCount - 1 && IsCurrentRequestedProduct(product))
                 todoListUI.CompleteTask(2);
@@ -472,6 +502,7 @@ namespace Leftovers
                 );
 
                 Debug.Log("Next requested product: " + nextProduct);
+                PlaceRequestedProduct();
             }
             else
             {
@@ -540,65 +571,29 @@ namespace Leftovers
                 return;
             }
 
+            CreateProductRequestStyles();
             string productName = GetRequestedProductName(currentRequestIndex);
+            if (productRequestIconName != productName)
+            {
+                productRequestIconName = productName;
+                productRequestIcon = Resources.Load<Texture2D>("RequestPanel/" + productName);
+            }
 
-            float width = Mathf.Min(650f, Screen.width - 40f);
-            float height = 150f;
+            float width = Mathf.Min(650f, Screen.width - 40f) * 0.6f;
+            float scale = width / 1320f;
+            float left = Screen.width - width - 24f;
+            Matrix4x4 originalMatrix = GUI.matrix;
+            Color originalColor = GUI.color;
+            GUI.matrix = originalMatrix * Matrix4x4.TRS(new Vector3(left, 24f, 0f),
+                Quaternion.identity, new Vector3(scale, scale, 1f));
+            GUI.color = Color.white;
 
-            float x = Screen.width - width - 24f;
-            float y = 24f;
-
-            Rect panel = new Rect(x, y, width, height);
-
-            // Dark background
-            GUI.DrawTexture(
-                panel,
-                Texture2D.whiteTexture,
-                ScaleMode.StretchToFill,
-                true,
-                0f,
-                new Color32(35, 40, 49, 245),
-                0f,
-                18f
-            );
-
-            // Golden accent on the left
-            GUI.DrawTexture(
-                new Rect(x, y + 15f, 7f, height - 30f),
-                Texture2D.whiteTexture,
-                ScaleMode.StretchToFill,
-                true,
-                0f,
-                new Color32(235, 177, 95, 255),
-                0f,
-                3f
-            );
-
-            GUIStyle headerStyle = new GUIStyle(GUI.skin.label);
-            headerStyle.fontSize = 28;
-            headerStyle.fontStyle = FontStyle.Bold;
-            headerStyle.normal.textColor = new Color32(235, 190, 120, 255);
-
-            GUIStyle productStyle = new GUIStyle(GUI.skin.label);
-            productStyle.fontSize = 45;
-            productStyle.fontStyle = FontStyle.Bold;
-            productStyle.normal.textColor = Color.white;
-
-            GUIStyle hintStyle = new GUIStyle(GUI.skin.label);
-            hintStyle.fontSize = 23;
-            hintStyle.normal.textColor = new Color32(205, 210, 220, 255);
-
-            GUI.Label(
-                new Rect(x + 25f, y + 12f, width - 45f, 35f),
-                $"REQUEST {currentRequestIndex + 1} / {requestedProducts.Length}",
-                headerStyle
-            );
-
-            GUI.Label(
-                new Rect(x + 25f, y + 48f, width - 45f, 58f),
-                "Find the " + productName,
-                productStyle
-            );
+            GUI.DrawTexture(new Rect(0f, 0f, 1320f, 400f), productRequestFrame);
+            GUI.Label(new Rect(99f, 27f, 390f, 72f),
+                "REQUEST " + (currentRequestIndex + 1) + " / " + requestedProducts.Length,
+                productRequestHeaderStyle);
+            DrawProductRequestLabel(new Rect(90f, 127f, 940f, 122f),
+                "Find the " + productName, productRequestTitleStyle);
 
             string requestHint = "Pick up the correct ingredient";
             if (productInteractor != null &&
@@ -608,15 +603,61 @@ namespace Leftovers
                 requestHint = "Bring the " + productName + " to the Assembly Table";
             }
 
-            GUI.Label(
-                new Rect(x + 25f, y + 110f, width - 45f, 30f),
-                requestHint,
-                hintStyle
-            );
+            DrawProductRequestLabel(new Rect(94f, 260f, 930f, 84f),
+                requestHint, productRequestHintStyle);
+            DrawProductRequestIcon();
+
+            GUI.color = originalColor;
+            GUI.matrix = originalMatrix;
         }
 
-        
-        
+        void CreateProductRequestStyles()
+        {
+            if (productRequestHeaderStyle != null)
+            {
+                return;
+            }
+
+            productRequestFrame = Resources.Load<Texture2D>("RequestPanel/Frame");
+            productRequestHeaderStyle = new GUIStyle(GUI.skin.label);
+            productRequestHeaderStyle.fontSize = 49;
+            productRequestHeaderStyle.fontStyle = FontStyle.Bold;
+            productRequestHeaderStyle.padding = new RectOffset(0, 0, 0, 0);
+            productRequestHeaderStyle.alignment = TextAnchor.MiddleLeft;
+            productRequestHeaderStyle.normal.textColor = new Color32(45, 25, 14, 255);
+            productRequestTitleStyle = new GUIStyle(productRequestHeaderStyle);
+            productRequestTitleStyle.fontSize = 104;
+            productRequestTitleStyle.normal.textColor = new Color32(248, 228, 208, 255);
+            productRequestTitleStyle.wordWrap = true;
+            productRequestHintStyle = new GUIStyle(productRequestTitleStyle);
+            productRequestHintStyle.fontSize = 44;
+            productRequestHintStyle.fontStyle = FontStyle.Normal;
+            productRequestHintStyle.normal.textColor = new Color32(233, 211, 187, 255);
+            productRequestShadowStyle = new GUIStyle(productRequestTitleStyle);
+            productRequestShadowStyle.normal.textColor = new Color32(28, 17, 12, 200);
+        }
+
+        void DrawProductRequestLabel(Rect rectangle, string text, GUIStyle style)
+        {
+            Rect shadow = rectangle;
+            shadow.y = shadow.y + 3f;
+            productRequestShadowStyle.fontSize = style.fontSize;
+            productRequestShadowStyle.fontStyle = style.fontStyle;
+            GUI.Label(shadow, text, productRequestShadowStyle);
+            GUI.Label(rectangle, text, style);
+        }
+
+        void DrawProductRequestIcon()
+        {
+            if (productRequestIcon == null)
+            {
+                return;
+            }
+
+            Rect icon = new Rect(1050f, 133f, 216f, 216f);
+            GUI.DrawTexture(icon, productRequestIcon, ScaleMode.ScaleToFit);
+        }
+
         void DrawRequestFeedback()
         {
             if (string.IsNullOrEmpty(feedbackMessage))
@@ -708,7 +749,14 @@ namespace Leftovers
             GUI.Label(new Rect(left, top + 20f, 300f, 40f), "Paused", titleStyle);
             if (GUI.Button(new Rect(left + 40f, top + 80f, 220f, 42f), "Resume"))
             {
-                viewController.SetPaused(false);
+                if (viewController != null && viewController.isActiveAndEnabled)
+                {
+                    viewController.SetPaused(false);
+                }
+                else if (firstPersonController != null)
+                {
+                    firstPersonController.SetPaused(false);
+                }
             }
 
             GUI.Label(new Rect(left, top + 132f, 300f, 28f), "Press Escape to resume", labelStyle);
@@ -717,6 +765,21 @@ namespace Leftovers
         void OnDisable()
         {
             ClearHighlight();
+        }
+
+        bool IsGamePaused()
+        {
+            if (viewController != null && viewController.isActiveAndEnabled)
+            {
+                return viewController.IsPaused || Time.timeScale == 0f;
+            }
+
+            if (firstPersonController != null)
+            {
+                return firstPersonController.IsPaused || Time.timeScale == 0f;
+            }
+
+            return Time.timeScale == 0f;
         }
     }
 }

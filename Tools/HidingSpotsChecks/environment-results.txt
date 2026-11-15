@@ -1,0 +1,6 @@
+PASS: All 6 product/spot combinations fit without solid overlaps and rest on their support.
+PASS: Closed containers block pickup. Open containers allow mouse targeting from a clear standing position with a walking route from the player spawn.
+PASS: All tested products move with the drawer.
+PASS: Random selection uses all three spots over 90 placements.
+PASS: Wrong pickups keep the spot. Correct pickups enter the basket, restore original size, advance the request, and complete the sequence.
+PASS: Environment uses the existing first-person controller and pause state.

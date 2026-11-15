@@ -14,7 +14,8 @@ namespace Leftovers
         public float ElapsedSeconds { get; private set; }
         Microwave[] microwaves;
         MicrowaveFood[] foods;
-        FridgeDoor[] doors;
+        KitchenNoise kitchenNoise;
+        NoiseBarUI noiseBar;
         Collider table;
         float settled;
         bool ready;
@@ -41,30 +42,27 @@ namespace Leftovers
             while (FindObjectOfType<KitchenIntro>() != null) yield return null;
             microwaves = FindObjectsOfType<Microwave>();
             foods = FindObjectsOfType<MicrowaveFood>(true);
-            doors = FindObjectsOfType<FridgeDoor>();
+            kitchenNoise = FindObjectOfType<KitchenNoise>();
+            if (kitchenNoise != null)
+            {
+                noiseBar = kitchenNoise.GetComponent<NoiseBarUI>();
+            }
             GameObject tabletop = GameObject.Find("Dining tabletop");
             if (tabletop != null) table = tabletop.GetComponent<Collider>();
-            foreach (FridgeDoor door in doors) door.SoundEmitted += HearDoor;
             ready = true;
-        }
-
-        void HearDoor(FridgeDoor door, DoorSoundKind kind, float strength)
-        {
-            if (ready && !Finished && kind == DoorSoundKind.Slam)
-                EndGame(false, "That slam woke someone up.");
         }
 
         void LateUpdate()
         {
             if (!ready || Finished || Time.timeScale == 0f) return;
             ElapsedSeconds += Time.deltaTime;
-            foreach (Microwave microwave in microwaves)
+            if (kitchenNoise != null && kitchenNoise.LimitReached)
             {
-                if (microwave.IsFinished && microwave.RemainingSeconds <= 0f)
+                if (noiseBar == null || !noiseBar.isActiveAndEnabled || noiseBar.IsFull)
                 {
-                    EndGame(false, "The microwave timer reached zero.");
-                    return;
+                    EndGame(false, "Too much noise woke someone up.");
                 }
+                return;
             }
             bool served = false;
             foreach (MicrowaveFood food in foods)
@@ -102,6 +100,11 @@ namespace Leftovers
 
         public void ServeFood(MicrowaveFood food)
         {
+            if (kitchenNoise != null && kitchenNoise.LimitReached)
+            {
+                return;
+            }
+
             if (ready && !Finished && FoodOnTable(food))
                 EndGame(true, "Midnight snack secured.");
         }
@@ -197,9 +200,6 @@ namespace Leftovers
 
         void OnDestroy()
         {
-            if (doors != null)
-                foreach (FridgeDoor door in doors)
-                    if (door != null) door.SoundEmitted -= HearDoor;
             if (panel != null) Destroy(panel);
         }
     }

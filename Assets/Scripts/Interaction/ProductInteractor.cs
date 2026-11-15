@@ -33,6 +33,14 @@ namespace Leftovers
         public ProductInteractable TargetedProduct { get; private set; }
         public ProductInteractable HeldProduct { get; private set; }
 
+        public bool HasAssemblyTable
+        {
+            get
+            {
+                return assemblyTable != null || sandwichAssembly != null;
+            }
+        }
+
         public bool CanPlaceHeldProduct
         {
             get

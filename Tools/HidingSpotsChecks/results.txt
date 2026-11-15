@@ -1,0 +1,7 @@
+PASS: All 21 product/spot combinations fit without solid overlaps and rest on their support.
+PASS: Closed containers block pickup. Open containers allow mouse targeting from a clear standing position with a walking route from the player spawn.
+PASS: All seven products move with the drawer.
+PASS: Random selection uses all three spots over 90 placements.
+PASS: Duplicate Tomato objects produce one active requested product.
+PASS: Wrong pickups keep the spot. Correct pickups enter the basket, restore original size, advance the request, and complete the sequence.
+The checks disable the existing TodoCanvas in memory because its font material throws an exception. The saved scene is unchanged by the checks.
