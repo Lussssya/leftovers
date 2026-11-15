@@ -7,6 +7,8 @@ namespace Leftovers
         public Camera interactionCamera;
         public bool useCenterAim;
         public float reach = 5.5f;
+        [SerializeField] float drawerDragSensitivity = 1.8f;
+        [SerializeField] float cabinetDragSensitivity = 1.2f;
         public Transform interactionOrigin;
         public CabinetPart Hovered { get; private set; }
         public CabinetPart Held { get { return heldPart; } }
@@ -24,6 +26,13 @@ namespace Leftovers
             {
                 interactionCamera = GetComponent<Camera>();
             }
+        }
+
+        ProductInteractor ingredients;
+
+        void Start()
+        {
+            ingredients = GetComponent<ProductInteractor>();
         }
 
         void Update()
@@ -70,6 +79,11 @@ namespace Leftovers
                 return;
             }
 
+            if (hit.collider.GetComponentInParent<ProductInteractable>() != null)
+            {
+                return;
+            }
+
             CabinetPart part = hit.collider.GetComponentInParent<CabinetPart>();
             if (part == null || !part.isActiveAndEnabled || DistanceToObject(hit.point) > reach)
             {
@@ -77,7 +91,8 @@ namespace Leftovers
             }
 
             Hovered = part;
-            if (Input.GetMouseButtonDown(0))
+            if (Input.GetMouseButtonDown(0) &&
+                (ingredients == null || !ingredients.IsCarryingIngredient))
             {
                 GrabPart(part, hit.point, pointer);
             }
@@ -152,7 +167,9 @@ namespace Leftovers
             {
                 amount = drag * 210f / Mathf.Max(1, Screen.height);
             }
-            heldPart.DragBy(amount);
+            float sensitivity = cabinetDragSensitivity;
+            if (heldPart.slidesOut) sensitivity = drawerDragSensitivity;
+            heldPart.DragBy(amount * sensitivity);
         }
 
         float DistanceToObject(Vector3 point)

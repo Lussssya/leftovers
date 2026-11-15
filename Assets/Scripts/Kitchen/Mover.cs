@@ -8,15 +8,22 @@ namespace Leftovers
         [SerializeField] float sprintMultiplier = 1.5f;
         [SerializeField] float collisionSkin = 0.02f;
         [SerializeField] Transform movementCamera;
+        [SerializeField] AudioSource footstepSource;
+        [SerializeField] AudioClip footstepClip;
+        [SerializeField] float stepDistance = 1.4f;
+        [SerializeField] [Range(0f, 1f)] float footstepVolume = 0.15f;
 
         Rigidbody playerRigidbody;
         Vector3 moveDirection;
         CameraFollow viewController;
         bool isSprinting;
+        Vector3 previousStepPosition;
+        float distanceSinceStep;
 
         void Awake()
         {
             playerRigidbody = GetComponent<Rigidbody>();
+            previousStepPosition = transform.position;
             if (movementCamera != null)
             {
                 viewController = movementCamera.GetComponent<CameraFollow>();
@@ -102,6 +109,32 @@ namespace Leftovers
 
             float safeDistance = Mathf.Max(0f, hit.distance - collisionSkin);
             return direction * safeDistance;
+        }
+
+        void LateUpdate()
+        {
+            Vector3 displacement = transform.position - previousStepPosition;
+            previousStepPosition = transform.position;
+            displacement.y = 0f;
+            RaycastHit ground;
+            if (playerRigidbody == null || Time.timeScale == 0f ||
+                moveDirection.sqrMagnitude < 0.01f || displacement.magnitude > 1f ||
+                (viewController != null && viewController.IsDragging) ||
+                !playerRigidbody.SweepTest(Vector3.down, out ground, 0.15f, QueryTriggerInteraction.Ignore))
+            {
+                distanceSinceStep = 0f;
+                return;
+            }
+
+            distanceSinceStep += displacement.magnitude;
+            if (distanceSinceStep >= Mathf.Max(0.2f, stepDistance))
+            {
+                distanceSinceStep = 0f;
+                if (footstepSource != null && footstepClip != null)
+                {
+                    footstepSource.PlayOneShot(footstepClip, footstepVolume);
+                }
+            }
         }
     }
 }

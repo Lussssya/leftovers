@@ -1,5 +1,4 @@
 using UnityEngine;
-using System.Collections.Generic;
 
 namespace Leftovers
 {
@@ -9,14 +8,14 @@ namespace Leftovers
         [SerializeField] Transform interactionOrigin;
         [SerializeField] Transform holdPoint;
         KitchenHud kitchenHud;
-        // Invisible inventory for collected ingredients
-        private readonly List<ProductInteractable> basket =
-            new List<ProductInteractable>();
-
-        public int BasketCount => basket.Count;
-        public IReadOnlyList<ProductInteractable> BasketItems => basket;
         [SerializeField] AssemblyTable assemblyTable;
         [SerializeField] SandwichAssembly sandwichAssembly;
+        [SerializeField] bool handleInputDirectly = true;
+        [SerializeField] AudioSource itemAudioSource;
+        [SerializeField] AudioClip pickupClip;
+        [SerializeField] AudioClip placeClip;
+        [SerializeField] AudioClip dropClip;
+        [SerializeField] [Range(0f, 1f)] float itemVolume = 0.25f;
         [SerializeField] float dropDistance = 1.5f;
         [SerializeField] float dropSurfaceOffset = 0.3f;
         [SerializeField] float dropRayHeight = 1.5f;
@@ -44,6 +43,16 @@ namespace Leftovers
         }
 
         float lastTargetedTime;
+        MouseDoorInteractor doors;
+        MouseCabinetInteractor cabinets;
+        MouseFoodInteractor food;
+
+        public Transform HoldPoint { get { return holdPoint; } }
+
+        public bool IsCarryingIngredient
+        {
+            get { return isActiveAndEnabled && HeldProduct != null; }
+        }
 
        
         void Awake()
@@ -54,6 +63,9 @@ namespace Leftovers
             }
 
             kitchenHud = GetComponent<KitchenHud>();
+            doors = GetComponent<MouseDoorInteractor>();
+            cabinets = GetComponent<MouseCabinetInteractor>();
+            food = GetComponent<MouseFoodInteractor>();
 
             if (kitchenHud == null)
             {
@@ -64,32 +76,30 @@ namespace Leftovers
         }
 
 
-        void Update()
+        void LateUpdate()
         {
-            if (interactionCamera == null || Time.timeScale == 0f)
+            if (interactionCamera == null) return;
+            if (food != null && food.InteractionFrame == Time.frameCount) return;
+
+            if (Time.timeScale == 0f || Input.GetKeyDown(KeyCode.Escape))
             {
+                DropHeldProduct();
                 ClearTarget();
                 return;
             }
             
-            if (Input.GetKeyDown(KeyCode.E) &&
-                kitchenHud != null &&
-                kitchenHud.RoundCompleted &&
-                sandwichAssembly != null &&
-                sandwichAssembly.IsInRange(GetInteractionOriginPosition()))
+            if ((doors != null && doors.Held != null) ||
+                (cabinets != null && cabinets.Held != null) ||
+                (food != null && food.Held != null))
             {
-                if (sandwichAssembly.TryPlaceNext(BasketItems))
-                {
-                    ClearTarget();
-                    return;
-                }
+                ClearTarget();
+                return;
             }
 
-            
             if (HeldProduct != null)
             {
                 ClearTarget();
-                if (Input.GetKeyDown(KeyCode.E))
+                if (handleInputDirectly && Input.GetKeyDown(KeyCode.E))
                 {
                     InteractWithHeldProduct();
                 }
@@ -99,10 +109,45 @@ namespace Leftovers
 
             Physics.SyncTransforms();
             UpdateTargetSelection();
-            if (TargetedProduct != null && Input.GetKeyDown(KeyCode.E))
+            if (handleInputDirectly && Input.GetKeyDown(KeyCode.E))
+            {
+                TryInteract();
+            }
+        }
+
+        public bool TryInteract()
+        {
+            if (HeldProduct != null)
+            {
+                InteractWithHeldProduct();
+                return true;
+            }
+
+            if (TryAdvanceSandwichAssembly())
+            {
+                ClearTarget();
+                return true;
+            }
+
+            if (TargetedProduct != null)
             {
                 PickUpTargetedProduct();
+                return true;
             }
+
+            return false;
+        }
+
+        bool TryAdvanceSandwichAssembly()
+        {
+            if (kitchenHud == null || !kitchenHud.RoundCompleted ||
+                sandwichAssembly == null ||
+                !sandwichAssembly.IsInRange(GetInteractionOriginPosition()))
+            {
+                return false;
+            }
+
+            return sandwichAssembly.TryPlaceNext();
         }
 
         void InteractWithHeldProduct()
@@ -128,6 +173,13 @@ namespace Leftovers
 
             HeldProduct = null;
             ClearTarget();
+
+            if (kitchenHud != null)
+            {
+                kitchenHud.NotifyRequestedProductPlaced(product);
+            }
+
+            PlayItemSound(placeClip);
             return true;
         }
 
@@ -141,71 +193,25 @@ namespace Leftovers
             }
 
             ProductInteractable selectedProduct = TargetedProduct;
-
-            // Kitchen ingredient collection system
-            if (kitchenHud != null)
-            {
-                // Do not collect extra ingredients after the
-                // request sequence has finished.
-                if (kitchenHud.RoundCompleted)
-                {
-                    return;
-                }
-
-                // Check whether this ingredient matches the request.
-                bool accepted =
-                    kitchenHud.TryAcceptProduct(selectedProduct);
-
-                if (!accepted)
-                {
-                    // Wrong ingredient: leave it in its original position.
-                    return;
-                }
-
-                // Correct ingredient: save it in the basket.
-                StoreInBasket(selectedProduct);
-                return;
-            }
-
-            // Preserve normal pickup behavior in other scenes
-            // that do not use the KitchenHud request system.
             if (holdPoint == null)
             {
                 return;
             }
 
-            HeldProduct = selectedProduct;
-            ClearTarget();
-            HeldProduct.PickUp(holdPoint);
-        }
-        
-        void StoreInBasket(ProductInteractable ingredient)
-        {
-            if (ingredient == null || basket.Contains(ingredient))
+            if (kitchenHud != null &&
+                !kitchenHud.CanPickRequestedProduct(selectedProduct))
             {
                 return;
             }
 
-            // Remember the collected ingredient.
-            basket.Add(ingredient);
+            selectedProduct.PickUp(holdPoint);
+            if (!selectedProduct.IsHeld) return;
 
-            // Clear the current target.
+            HeldProduct = selectedProduct;
             ClearTarget();
-
-            // Hide the ingredient from the kitchen.
-            // Do not destroy it: we need it for assembly later.
-            ingredient.gameObject.SetActive(false);
-
-            Debug.Log(
-                "Added to basket: " + ingredient.DisplayName
-            );
-
-            Debug.Log(
-                "Basket contains " + basket.Count + " ingredients."
-            );
+            if (kitchenHud != null) kitchenHud.NotifyRequestedProductPickedUp(HeldProduct);
+            PlayItemSound(pickupClip);
         }
-
-
 
         void DropHeldProduct()
         {
@@ -215,11 +221,19 @@ namespace Leftovers
             }
 
             Vector3 dropPosition = FindDropPosition();
-            float cameraYaw = interactionCamera.transform.eulerAngles.y;
-            Quaternion dropRotation = Quaternion.Euler(0f, cameraYaw, 0f);
+            Quaternion dropRotation = Quaternion.Euler(0f, interactionCamera.transform.eulerAngles.y, 0f);
             HeldProduct.Drop(dropPosition, dropRotation);
+            PlayItemSound(dropClip);
             HeldProduct = null;
             ClearTarget();
+        }
+
+        void PlayItemSound(AudioClip clip)
+        {
+            if (itemAudioSource != null && clip != null)
+            {
+                itemAudioSource.PlayOneShot(clip, itemVolume);
+            }
         }
 
         Vector3 FindDropPosition()
@@ -335,7 +349,9 @@ namespace Leftovers
 
         ProductInteractable FindMouseHoverTarget()
         {
-            return FindMouseHoverTargetAt(Input.mousePosition);
+            Vector2 pointer = Input.mousePosition;
+            if (Cursor.lockState == CursorLockMode.Locked) pointer = interactionCamera.pixelRect.center;
+            return FindMouseHoverTargetAt(pointer);
         }
 
         ProductInteractable FindMouseHoverTargetAt(Vector2 pointer)

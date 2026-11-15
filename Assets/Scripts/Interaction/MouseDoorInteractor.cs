@@ -6,6 +6,8 @@ namespace Leftovers
     {
         public Camera interactionCamera;
         public bool useCenterAim;
+        public bool followHandleArc;
+        public Vector3 HeldPoint { get { return Held.Door.transform.TransformPoint(heldLocalPoint); } }
         public float reach = 4.5f;
         public Transform interactionOrigin;
         public float degreesPerScreenHeight = 210f;
@@ -25,6 +27,13 @@ namespace Leftovers
             {
                 interactionCamera = GetComponent<Camera>();
             }
+        }
+
+        ProductInteractor ingredients;
+
+        void Start()
+        {
+            ingredients = GetComponent<ProductInteractor>();
         }
 
         void Update()
@@ -50,7 +59,8 @@ namespace Leftovers
             }
 
             FindHandle(pointer);
-            if (Hovered != null && Input.GetMouseButtonDown(0))
+            if (Hovered != null && Input.GetMouseButtonDown(0) &&
+                (ingredients == null || !ingredients.IsCarryingIngredient))
             {
                 GrabHandle(pointer);
             }
@@ -75,10 +85,10 @@ namespace Leftovers
                 return;
             }
 
-            FridgeDoorHandle handle = hit.collider.GetComponent<FridgeDoorHandle>();
+            FridgeDoorHandle handle = hit.collider.GetComponentInParent<FridgeDoorHandle>();
             if (handle == null)
             {
-                FridgeDoor door = hit.collider.GetComponent<FridgeDoor>();
+                FridgeDoor door = hit.collider.GetComponentInParent<FridgeDoor>();
                 if (door != null)
                 {
                     handle = door.GetComponentInChildren<FridgeDoorHandle>();
@@ -135,6 +145,12 @@ namespace Leftovers
                 return;
             }
 
+            if (followHandleArc)
+            {
+                door.HoldAtAngle(FindPointerAngle(door, pointer));
+                return;
+            }
+
             Vector2 movement = pointer - lastPointer;
             lastPointer = pointer;
             if (useCenterAim)
@@ -145,6 +161,24 @@ namespace Leftovers
             float drag = Vector2.Dot(movement, DragAxis);
             float degrees = drag * degreesPerScreenHeight / Mathf.Max(1, Screen.height);
             door.DragBy(degrees);
+        }
+
+        float FindPointerAngle(FridgeDoor door, Vector2 pointer)
+        {
+            float bestAngle = door.Angle;
+            float bestDistance = float.MaxValue;
+            for (float angle = 0f; angle <= door.MaximumAngle; angle += .25f)
+            {
+                Vector3 screenPoint = interactionCamera.WorldToScreenPoint(door.PointAtAngle(heldLocalPoint, angle));
+                if (screenPoint.z <= 0f) continue;
+                float distance = ((Vector2)screenPoint - pointer).sqrMagnitude;
+                if (distance < bestDistance)
+                {
+                    bestDistance = distance;
+                    bestAngle = angle;
+                }
+            }
+            return bestAngle;
         }
 
         float DistanceToObject(Vector3 point)
